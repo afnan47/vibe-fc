@@ -3,6 +3,7 @@ import SearchBar from './components/SearchBar';
 import VibeGauge from './components/VibeGauge';
 import FeatureChart from './components/FeatureChart';
 import HistoryList from './components/HistoryList';
+import ScouterPlaylist from './components/ScouterPlaylist';
 
 // Host setup: FastAPI backend runs on localhost:8000
 const API_BASE = 'http://127.0.0.1:8000';
@@ -206,34 +207,43 @@ export default function App() {
         </p>
       </header>
 
-      {/* Main Search Panel */}
-      <section style={{ marginBottom: '3rem' }}>
-        <SearchBar onSearch={handleSearch} isLoading={isLoading} value={trackInput} onChange={setTrackInput} />
-        {error && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
-            color: '#f87171',
-            padding: '0.75rem 1.25rem',
-            borderRadius: '8px',
-            maxWidth: '700px',
-            margin: '1rem auto 0',
-            fontSize: '0.85rem',
-            textAlign: 'center'
-          }}>
-            ⚠️ {error}
-          </div>
-        )}
-      </section>
-
-      {/* Results / Dashboard Grid */}
+      {/* Two-Column Layout: Vibe Checker (left) + Scouter (right) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: (isLoading || selectedTrack) ? '1.2fr 2fr' : '1fr',
-        gap: '2.5rem',
+        gridTemplateColumns: '1fr 320px',
+        gap: '1.5rem',
         alignItems: 'start'
       }}>
-        {isLoading ? (
+        {/* Left Column — Vibe Checker */}
+        <div style={{ minWidth: 0 }}>
+          {/* Main Search Panel */}
+          <section style={{ marginBottom: '2.5rem' }}>
+            <SearchBar onSearch={handleSearch} isLoading={isLoading} value={trackInput} onChange={setTrackInput} />
+            {error && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                color: '#f87171',
+                padding: '0.75rem 1.25rem',
+                borderRadius: '8px',
+                maxWidth: '700px',
+                margin: '1rem auto 0',
+                fontSize: '0.85rem',
+                textAlign: 'center'
+              }}>
+                Warning: {error}
+              </div>
+            )}
+          </section>
+
+          {/* Results / Dashboard Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: (isLoading || selectedTrack) ? '1.2fr 2fr' : '1fr',
+            gap: '2rem',
+            alignItems: 'start'
+          }}>
+            {isLoading ? (
           <>
             {/* Left Column: Pulse Skeleton Card */}
             <div style={{
@@ -556,28 +566,35 @@ export default function App() {
         )}
       </div>
 
-      {/* Bottom Row: History Panel */}
-      <section className="glass-card ea-slant-top" style={{
-        marginTop: '2.5rem',
-        maxWidth: '850px',
-        marginRight: 'auto',
-        marginLeft: 'auto'
-      }}>
-        <h3 style={{
-          fontSize: '1rem',
-          fontWeight: '800',
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-          color: 'var(--text-primary)',
-          marginBottom: '1rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem'
+          {/* Bottom Row: History Panel */}
+          <section className="glass-card ea-slant-top" style={{
+            marginTop: '2.5rem',
+          }}>
+            <h3 style={{
+              fontSize: '1rem',
+              fontWeight: '800',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              color: 'var(--text-primary)',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span>⏱️</span> Recent Scouts
+            </h3>
+            <HistoryList history={history} onSelectTrack={handleSearch} />
+          </section>
+        </div>
+
+        {/* Right Column — Daily Scouter */}
+        <div style={{
+          position: 'sticky',
+          top: '1.5rem',
         }}>
-          <span>⏱️</span> Recent Scouts
-        </h3>
-        <HistoryList history={history} onSelectTrack={handleSearch} />
-      </section>
+          <ScouterPlaylist onSelectTrack={handleSearch} />
+        </div>
+      </div>
 
       <style>{`
         .ex-btn:hover {

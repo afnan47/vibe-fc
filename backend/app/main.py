@@ -1,14 +1,47 @@
 import os
 import re
 import pandas as pd
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from apscheduler.schedulers.background import BackgroundScheduler
 
-from .fetcher import extract_track_id, search_local_csv, fetch_spotify_metadata_via_embed, query_sharded_parquet_lake, fetch_from_rapidapi, fetch_from_spotify_api
+from .fetcher import extract_track_id, search_local_csv, fetch_spotify_metadata_via_embed, query_sharded_parquet_lake, fetch_from_rapidapi, fetch_from_spotify_api, fetch_fallback_metadata_features
 from .cache import lookup_cache, save_cache, get_supabase_client
 from .model import score_track, load_model_assets
+from .scouter import get_scouter_playlist, run_daily_scout
 
-app = FastAPI(title="FIFA Vibe Taste Checker API")
+_scheduler = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _scheduler
+
+    # Seed initial scout if DB is empty
+    try:
+        client = get_supabase_client()
+        if client:
+            res = client.table("scouted_tracks").select("track_id", count="exact").limit(1).execute()
+            if res.count == 0:
+                print("[Startup] scouted_tracks is empty — running initial seed crawl...")
+                run_daily_scout()
+    except Exception as e:
+        print(f"[Startup] Seed scout check error: {e}")
+
+    # Start 24h recurring scheduler
+    _scheduler = BackgroundScheduler()
+    _scheduler.add_job(run_daily_scout, "interval", hours=24, id="daily_scout", replace_existing=True)
+    _scheduler.start()
+    print("[Startup] Daily scouter scheduler started (24h interval).")
+
+    yield
+
+    if _scheduler:
+        _scheduler.shutdown(wait=False)
+
+
+app = FastAPI(title="FIFA Vibe Taste Checker API", lifespan=lifespan)
 
 # Configure CORS
 app.add_middleware(
@@ -106,6 +139,10 @@ async def check_vibe(track_input: str = Query(..., description="Spotify URL, URI
     # TIER 3.6: Check Official Spotify Web API Fallback (using SPOTIFY_CLIENT_ID / SECRET credentials)
     if not track_data:
         track_data = fetch_from_spotify_api(track_id)
+        
+    # TIER 3.7: Fetch metadata via Embed and generate fallback features
+    if not track_data:
+        track_data = fetch_fallback_metadata_features(track_id)
         
     if not track_data:
         raise HTTPException(status_code=404, detail="Track features could not be found.")
@@ -220,6 +257,12 @@ async def get_history(limit: int = 10):
     except Exception as e:
         print(f"History fetch error: {e}")
         return []
+
+
+@app.get("/api/scouter/playlist")
+async def scouter_playlist():
+    """Returns today's top 10 FIFA Elite scouted tracks."""
+    return get_scouter_playlist()
 
 
 

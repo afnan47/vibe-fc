@@ -19,3 +19,19 @@ CREATE TABLE IF NOT EXISTS track_cache (
 
 -- Index the track_id for instant B-Tree point-lookups
 CREATE UNIQUE INDEX IF NOT EXISTS idx_track_id ON track_cache(track_id);
+
+-- =============================================================================
+-- Daily Scouter: Track discovery & FIFA Elite ranking
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS scouted_tracks (
+    track_id VARCHAR(22) NOT NULL REFERENCES track_cache(track_id),
+    scout_batch_id DATE NOT NULL,                 -- e.g. '2026-06-28'
+    scout_rank SMALLINT NOT NULL,                 -- 1 to 10
+    vibe_score REAL NOT NULL,                     -- 0.0% to 100.0%
+    source_platform VARCHAR(32) NOT NULL,         -- 'spotify_nmf', 'pitchfork', 'soundcloud'
+    scouted_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (track_id, scout_batch_id)
+);
+
+-- Fast lookup: today's top 10 by rank
+CREATE INDEX IF NOT EXISTS idx_scout_batch ON scouted_tracks(scout_batch_id, scout_rank);
