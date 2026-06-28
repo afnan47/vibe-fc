@@ -30,7 +30,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-
+  const [volume, setVolume] = useState(1);
 
 
   const [trackInput, setTrackInput] = useState('');
@@ -63,6 +63,7 @@ export default function App() {
     }
     if (selectedTrack?.preview_url) {
       const newAudio = new Audio(selectedTrack.preview_url);
+      newAudio.volume = volume;
       newAudio.onended = () => {
         setIsPlaying(false);
         setCurrentTime(0);
@@ -124,6 +125,12 @@ export default function App() {
     audio.currentTime = newTime;
     setCurrentTime(newTime);
   };
+
+  useEffect(() => {
+    if (audio) {
+      audio.volume = volume;
+    }
+  }, [volume, audio]);
 
   const formatTime = (secs) => {
     if (isNaN(secs)) return '0:00';
@@ -246,7 +253,7 @@ export default function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div>
             <h1>
-              FUT VIBE <span style={{ color: 'var(--fc-lime)', WebkitTextFillColor: 'var(--fc-lime)' }}>FC</span>
+              FUTVIBE
             </h1>
           </div>
         </div>
@@ -668,29 +675,45 @@ export default function App() {
                     width: '100%'
                   }}>
                     {selectedTrack.preview_url ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{
-                          fontSize: '0.62rem',
-                          fontWeight: '900',
-                          letterSpacing: '1.2px',
-                          textTransform: 'uppercase',
-                          background: 'var(--fc-lime)',
-                          color: '#12141c',
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          lineHeight: 1
-                        }}>
-                          Preview
-                        </span>
-                        <span style={{
-                          fontSize: '0.72rem',
-                          fontWeight: '800',
-                          letterSpacing: '0.5px',
-                          textTransform: 'uppercase',
-                          color: isPlaying ? 'var(--fc-lime)' : 'var(--text-muted)'
-                        }}>
-                          {isPlaying ? 'Playing' : 'Paused'}
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0 }}>
+                        <div
+                          onClick={() => setVolume(volume > 0 ? 0 : 1)}
+                          style={{ display: 'flex', cursor: 'pointer', flexShrink: 0 }}
+                        >
+                          <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '16px', height: '16px', color: volume > 0 ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+                            {volume === 0 ? (
+                              <path d="M3 9v6h4l5 5V4L7 9H3zm13 3.5l2.5-2.5 1.5 1.5-2.5 2.5 2.5 2.5-1.5 1.5-2.5-2.5-2.5 2.5-1.5-1.5 2.5-2.5-2.5-2.5 1.5-1.5 2.5 2.5z"/>
+                            ) : (
+                              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                            )}
+                          </svg>
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const x = (e.clientX - rect.left) / rect.width;
+                            const newVol = Math.max(0, Math.min(1, x));
+                            setVolume(newVol);
+                          }}
+                          style={{
+                            flex: 1,
+                            height: '6px',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            borderRadius: '3px',
+                            cursor: 'pointer',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            maxWidth: '120px'
+                          }}
+                        >
+                          <div style={{
+                            width: `${volume * 100}%`,
+                            height: '100%',
+                            background: 'var(--fc-lime)',
+                            borderRadius: '3px',
+                            transition: 'width 0.05s linear'
+                          }} />
+                        </div>
                       </div>
                     ) : (
                       <div style={{ flex: 1, minWidth: 0 }}>

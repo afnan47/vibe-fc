@@ -40,16 +40,18 @@ export default function ScouterPlaylist({ onSelectTrack }) {
 
   return (
     <div className="scouter-panel glass-card" style={{
-      padding: '1.25rem',
-      minHeight: '100%',
+      padding: '0.5rem 1.25rem 1.25rem 1.25rem',
+      height: '100%',
       display: 'flex',
       flexDirection: 'column',
+      overflow: 'hidden',
+      minHeight: 0,
     }}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: '1rem',
+        marginBottom: '0.85rem',
       }}>
         <div style={{
           display: 'flex',
@@ -57,27 +59,33 @@ export default function ScouterPlaylist({ onSelectTrack }) {
           gap: '0.5rem',
         }}>
           <h3 style={{
-            fontSize: '1.3rem',
+            fontSize: '2.2rem',
             fontWeight: '900',
             textTransform: 'uppercase',
-            letterSpacing: '1.5px',
+            letterSpacing: '-0.8px',
             fontStyle: 'italic',
-            color: 'var(--text-primary)',
+            fontFamily: "'Barlow Condensed', sans-serif",
+            lineHeight: '1.0',
+            background: 'linear-gradient(135deg, #ffffff 0%, #e5c158 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter: 'drop-shadow(0 0 12px rgba(229, 193, 88, 0.35))',
             margin: 0,
           }}>
-            FIFA Elite Scouter
+            VIBE <span style={{ color: 'var(--fc-lime)', WebkitTextFillColor: 'var(--fc-lime)' }}>SCOUTER</span>
           </h3>
+
         </div>
         <span style={{
-          fontSize: '0.75rem',
+          fontSize: '0.7rem',
           fontWeight: '800',
           textTransform: 'uppercase',
           letterSpacing: '1px',
-          color: 'var(--text-muted)',
-          background: 'rgba(255,255,255,0.05)',
-          padding: '0.3rem 0.6rem',
+          color: 'var(--fc-lime)',
+          background: 'rgba(203, 249, 0, 0.08)',
+          padding: '0.25rem 0.55rem',
           borderRadius: '4px',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid rgba(203, 249, 0, 0.2)',
         }}>
           Top 10 Daily
         </span>
@@ -117,6 +125,7 @@ export default function ScouterPlaylist({ onSelectTrack }) {
           flexDirection: 'column',
           gap: '0.55rem',
           flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
         }}>
           {playlist.map((item) => {
@@ -143,10 +152,11 @@ export default function ScouterPlaylist({ onSelectTrack }) {
               >
                 {/* Rank badge */}
                 <div style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '6px',
-                  background: 'rgba(255,255,255,0.04)',
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '8px',
+                  background: item.scout_rank <= 3 ? 'rgba(203, 249, 0, 0.08)' : 'rgba(255,255,255,0.04)',
+                  border: item.scout_rank <= 3 ? '1px solid rgba(203, 249, 0, 0.15)' : 'none',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -160,15 +170,16 @@ export default function ScouterPlaylist({ onSelectTrack }) {
 
                 {/* Cover art */}
                 <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '6px',
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '8px',
                   flexShrink: 0,
                   background: cache.cover_art_url ? `url(${cache.cover_art_url}) center/cover` : 'rgba(255,255,255,0.04)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: '0.9rem',
+                  boxShadow: cache.cover_art_url ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
                 }}>
                   {!cache.cover_art_url && '🎵'}
                 </div>
@@ -187,13 +198,13 @@ export default function ScouterPlaylist({ onSelectTrack }) {
                     {cache.title || 'Unknown'}
                   </div>
                    <div style={{
-                     fontSize: '0.75rem',
+                     fontSize: '0.7rem',
                      color: 'var(--text-secondary)',
                      whiteSpace: 'nowrap',
                      overflow: 'hidden',
                      textOverflow: 'ellipsis',
                      lineHeight: 1.3,
-                     marginTop: '1px',
+                     marginTop: '2px',
                    }}>
                     {cache.artist || 'Unknown'}
                   </div>
@@ -207,27 +218,28 @@ export default function ScouterPlaylist({ onSelectTrack }) {
                   flexShrink: 0,
                 }}>
                   <span style={{
-                    fontSize: '0.9rem',
+                    fontSize: '1rem',
                     fontWeight: '900',
                     color: getScoreColor(item.vibe_score),
-                    minWidth: '40px',
+                    minWidth: '42px',
                     textAlign: 'right',
+                    textShadow: '0 0 12px currentColor',
                   }}>
                     {Number(item.vibe_score).toFixed(0)}%
                   </span>
                   <span 
                     title={platform.title || ''}
                     style={{
-                      fontSize: '0.65rem',
+                      fontSize: '0.6rem',
                       fontWeight: '800',
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
                       color: platform.label === 'FUT' ? '#12141c' : '#fff',
                       background: platform.color,
-                      padding: '0.2rem 0.5rem',
+                      padding: '0.2rem 0.45rem',
                       borderRadius: '3.5px',
                       lineHeight: '1.2',
-                      opacity: 0.85,
+                      opacity: 0.9,
                     }}
                   >
                     {platform.label}
@@ -242,8 +254,12 @@ export default function ScouterPlaylist({ onSelectTrack }) {
       <style>{`
         .scouter-track-item:hover {
           background: rgba(255, 255, 255, 0.04) !important;
-          border-color: var(--fc-lime) !important;
-          transform: translateX(3px);
+          border-color: rgba(229, 193, 88, 0.3) !important;
+          transform: translateX(4px);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+        .scouter-track-item:active {
+          transform: translateX(2px);
         }
       `}</style>
     </div>
