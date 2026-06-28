@@ -49,6 +49,8 @@ def lookup_cache(track_id: str) -> dict:
                 'acousticness': float(data.get('acousticness', 0)),
                 'loudness': float(data.get('loudness', 0)),
                 'vibe_score': float(data.get('vibe_score', 0)),
+                'preview_url': data.get('preview_url'),
+                'cover_art_url': data.get('cover_art_url'),
                 'source': 'supabase_cache'
             }
     except Exception as e:
@@ -61,22 +63,34 @@ def save_cache(features: dict, vibe_score: float) -> bool:
     if not client:
         return False
         
+    payload = {
+        'track_id': features['track_id'],
+        'title': features['title'],
+        'artist': features['artist'],
+        'danceability': float(features['danceability']),
+        'energy': float(features['energy']),
+        'valence': float(features['valence']),
+        'tempo': float(features['tempo']),
+        'acousticness': float(features['acousticness']),
+        'loudness': float(features['loudness']),
+        'vibe_score': float(vibe_score),
+        'preview_url': features.get('preview_url'),
+        'cover_art_url': features.get('cover_art_url')
+    }
+    
     try:
-        payload = {
-            'track_id': features['track_id'],
-            'title': features['title'],
-            'artist': features['artist'],
-            'danceability': float(features['danceability']),
-            'energy': float(features['energy']),
-            'valence': float(features['valence']),
-            'tempo': float(features['tempo']),
-            'acousticness': float(features['acousticness']),
-            'loudness': float(features['loudness']),
-            'vibe_score': float(vibe_score)
-        }
         # Upsert: insert or update if track_id exists
         client.table("track_cache").upsert(payload).execute()
         return True
     except Exception as e:
-        print(f"Supabase cache save error: {e}")
+        print(f"Supabase cache save error with full payload: {e}")
+        print("Retrying save without preview_url and cover_art_url (migration might not be applied yet)...")
+        # Fallback to schema without the new columns
+        fallback_payload = {k: v for k, v in payload.items() if k not in ['preview_url', 'cover_art_url']}
+        try:
+            client.table("track_cache").upsert(fallback_payload).execute()
+            print("Successfully cached fallback payload.")
+            return True
+        except Exception as e_fallback:
+            print(f"Supabase cache save fallback error: {e_fallback}")
     return False

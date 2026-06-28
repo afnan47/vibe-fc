@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS track_cache (
     acousticness REAL NOT NULL,        -- 0.0 to 100.0 scale
     loudness REAL NOT NULL,            -- Decibels (dB)
     vibe_score REAL NOT NULL,          -- Calculated vibe match percentage (0.0% to 100.0%)
+    preview_url TEXT,                  -- 30-second MP3 preview URL
+    cover_art_url TEXT,                -- Album cover art URL
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

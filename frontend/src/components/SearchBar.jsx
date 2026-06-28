@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 
-export default function SearchBar({ onSearch, isLoading }) {
-  const [input, setInput] = useState('');
-
+export default function SearchBar({ onSearch, isLoading, value, onChange }) {
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    onSearch(input.trim());
+    if (!value.trim()) return;
+    onSearch(value.trim());
   };
 
   return (
@@ -26,8 +24,8 @@ export default function SearchBar({ onSearch, isLoading }) {
             type="text"
             className="input-field"
             placeholder="Paste Spotify Song Link or Track ID (e.g. 7ouMYWpwJ...)"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
             disabled={isLoading}
             style={{
               width: '100%',

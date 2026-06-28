@@ -1,4 +1,9 @@
-# FUT Vibe FC: FIFA Vibe Taste Checker ⚽🎮
+# FUT Vibe FC — FIFA Vibe Taste Checker ⚽🎮
+
+![Python](https://img.shields.io/badge/Python-3.12%2B-blue?style=flat-square&logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=flat-square&logo=fastapi)
+![React](https://img.shields.io/badge/React-18%2B-61DAFB?style=flat-square&logo=react)
+![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
 FUT Vibe FC is an end-to-end web application that evaluates whether a song matches the "FIFA soundtrack vibe" using machine learning. 
 
@@ -8,11 +13,14 @@ It replaces unreliable heuristic algorithms with a **One-Class Support Vector Ma
 
 ## 🏗️ System Architecture & Caching Pipeline
 
-The application features a high-performance **3-Tier Fetch & Cache** architecture:
+The application features a high-performance **4-Tier Fetch & Cache** architecture:
 
-1. **Supabase Cloud DB Cache**: Instant point-lookups for previously scouted tracks.
+1. **Supabase Cloud DB Cache**: Instant point-lookups for previously scouted tracks. It stores track features, scraped album cover art, and 30-second audio previews. Legacy cached rows are dynamically upgraded and auto-repaired on the fly.
 2. **Local Golden Ground Dataset**: Instant fallback searches within the 1,400+ song offline training set (`The Ultimate FUT Playlist.csv`).
-3. **Live API Fetcher (ReccoBeats)**: If the song is new, the backend fetches its metadata and audio features directly using the ReccoBeats API (bypassing Spotify premium restrictions) and then saves it to the Supabase cache for subsequent requests.
+3. **Hugging Face Sharded Parquet Lake**: If the track is not cached or in the golden dataset, DuckDB performs remote range queries via HTTPFS on a sharded 256-million Spotify track dataset (`ozefe/spotify_audio_features`) hosted on Hugging Face, retrieving features in ~1s.
+4. **Live API Fallback (RapidAPI)**: If the song is a new release (2025/2026) and not present in the lake, the backend queries the Spotify Extended Audio Features API on RapidAPI (requires `RAPIDAPI_KEY` in `.env`).
+
+Any newly resolved track is automatically enriched with cover art and 30-second preview URLs using a **keyless Spotify Embed metadata scraper** (which extracts Next.js hydration props completely for free) and cached in Supabase.
 
 ---
 
@@ -42,7 +50,9 @@ vibe-fc/
 │   │   └── index.css          # FUT/EA FC dark-mode CSS design system
 │   └── package.json
 ├── dev.py                     # Single-command concurrent developer runner
-├── The Ultimate FUT Playlist.csv # Golden ground dataset
+├── The Ultimate FUT Playlist.csv # Golden ground dataset (1,400+ tracks)
+├── .env.example               # Environment variable template
+├── LICENSE
 └── README.md                  # This documentation
 ```
 
@@ -50,24 +60,50 @@ vibe-fc/
 
 ## 🛠️ Getting Started
 
-### 1. Database Setup
-1. Log in to your [Supabase Dashboard](https://supabase.com).
-2. Open the **SQL Editor** for your project.
-3. Copy and execute the SQL script in [backend/schema.sql](file:///C:/Users/Afnan/Downloads/Hobby/vibe-fc/backend/schema.sql). This will create the `track_cache` table.
+### Prerequisites
+- **Python 3.12+** with `pip`
+- **Node.js 18+** with `npm`
+- A free [Supabase](https://supabase.com) project
+- A free [Hugging Face](https://huggingface.co) account (for the sharded parquet lake)
+- *(Optional)* A [RapidAPI](https://rapidapi.com) key for live 2025/2026 track lookups
 
-### 2. Environment Configuration
-Ensure your `.env` file at the root contains the correct Supabase credentials:
-```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_role_key
+### 1. Clone & Install
+```bash
+git clone https://github.com/your-username/vibe-fc.git
+cd vibe-fc
+
+# Install Python backend dependencies
+pip install -r backend/requirements.txt
+
+# Install frontend dependencies
+cd frontend && npm install && cd ..
 ```
 
-### 3. Quick Run (Recommended)
-You can start both the FastAPI backend and React frontend dev servers simultaneously using a single command:
+### 2. Environment Configuration
+Copy the template and fill in your credentials:
+```bash
+cp .env.example .env
+```
+Then edit `.env` with your keys. See `.env.example` for a description of each variable.
+
+### 3. Database Setup
+1. Log in to your [Supabase Dashboard](https://supabase.com).
+2. Open the **SQL Editor** for your project.
+3. Copy and run the DDL script in [`backend/schema.sql`](backend/schema.sql) to create the `track_cache` table.
+
+### 4. Quick Run (Recommended)
+Start both the FastAPI backend and React frontend dev servers with a single command:
 ```bash
 python dev.py
 ```
-*This script will automatically check if the model is trained, build it if necessary, start the backend on `http://127.0.0.1:8000`, and start the frontend dev server on `http://localhost:5173`.*
+*This script automatically trains the model if needed, starts the backend on `http://127.0.0.1:8000`, and starts the frontend on `http://localhost:5173`.*
+
+### 5. Train the Model Manually (Optional)
+If you want to retrain the OC-SVM from scratch:
+```bash
+python backend/scripts/train_vibe_model.py
+```
+The fitted model, scaler, and calibration parameters will be saved to `backend/models/`.
 
 ---
 
@@ -90,3 +126,19 @@ The parameters $k$ and $x_0$ are dynamically calibrated on the training distribu
 *   The **5th percentile** of the training set is mapped to exactly **50.0%** ($x_0$).
 *   The **median** (50th percentile) is mapped to **95.0%** ($k$).
 *   This ensures inliers sitting inside the dense core score near **95%-100%**, while extreme outliers decay gracefully to **0%**.
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you'd like to change.
+
+1. Fork the repo
+2. Create your feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes (`git commit -m 'feat: add my feature'`)
+4. Push to the branch (`git push origin feature/my-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the **MIT License**.

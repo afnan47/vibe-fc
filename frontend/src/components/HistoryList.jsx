@@ -48,6 +48,25 @@ export default function HistoryList({ history, onSelectTrack }) {
           }}
           className="history-item"
         >
+          {/* Cover Art Thumbnail */}
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '6px',
+            marginRight: '0.75rem',
+            background: 'rgba(255, 255, 255, 0.05)',
+            backgroundImage: track.cover_art_url ? `url(${track.cover_art_url})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.8rem',
+            flexShrink: 0
+          }}>
+            {!track.cover_art_url && '🎵'}
+          </div>
+
           <div style={{ flex: 1, minWidth: 0, paddingRight: '1rem' }}>
             <h4 style={{
               fontSize: '0.85rem',

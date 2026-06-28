@@ -1,11 +1,67 @@
-# Python-generated files
+# ==============================================================================
+# Python
+# ==============================================================================
 __pycache__/
 *.py[oc]
-build/
-dist/
-wheels/
 *.egg-info
+.eggs/
+build/
+wheels/
 
 # Virtual environments
-.venv
+.venv/
+venv/
+env/
+
+# ==============================================================================
+# Environment & Secrets (NEVER commit real credentials)
+# ==============================================================================
 .env
+.env.local
+.env.*.local
+
+# Runtime token/session cache produced by the app
+.cache
+
+# ==============================================================================
+# Large Data Files & Local Data Lakes (use HuggingFace / remote storage instead)
+# ==============================================================================
+*.parquet
+*.csv.gz
+sharded_spotify_lake/
+test_sharded_lake/
+
+# ==============================================================================
+# Frontend (Node / Vite)
+# ==============================================================================
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==============================================================================
+# Editor & OS
+# ==============================================================================
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ==============================================================================
+# Misc scratch / temp
+# ==============================================================================
+*.tmp
+*.bak
