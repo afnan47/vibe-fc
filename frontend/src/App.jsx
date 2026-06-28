@@ -108,13 +108,17 @@ export default function App() {
       }
       const data = await res.json();
       setSelectedTrack(data);
+      setTrackInput(`${data.title} — ${data.artist}`);
       
       // Haptic feedback trigger (vibrate 100ms, pause 50ms, vibrate 100ms)
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate([100, 50, 100]);
       }
       
-      setHistory(prev => [data, ...prev].slice(0, 10)); // Add to session history
+      setHistory(prev => {
+        const filtered = prev.filter(t => (t.id || t.track_id) !== (data.id || data.track_id));
+        return [data, ...filtered].slice(0, 10);
+      }); // Add to session history without duplicates
     } catch (err) {
       setError(err.message);
       setSelectedTrack(null);
@@ -170,22 +174,6 @@ export default function App() {
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            background: 'rgba(229, 193, 88, 0.05)',
-            border: '1.5px solid var(--fc-lime)',
-            padding: '0.3rem 0.75rem',
-            borderRadius: '20px',
-            color: 'var(--fc-lime)',
-            fontSize: '0.7rem',
-            fontWeight: '800',
-            textTransform: 'uppercase',
-            letterSpacing: '2px'
-          }} className="ea-slant-panel">
-            ⚽ Vibe Scout
-          </div>
           <div>
             <h1 style={{
               fontSize: '2.4rem',
@@ -342,15 +330,6 @@ export default function App() {
                   gap: '0.75rem',
                   flexShrink: 0
                 }}>
-                  <h2 style={{
-                    fontSize: '0.85rem',
-                    fontWeight: '800',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1.5px',
-                    color: 'var(--text-secondary)'
-                  }}>
-                    Scout Report Card
-                  </h2>
                   
                   <div 
                     className="fut-card-wrapper"
@@ -419,7 +398,7 @@ export default function App() {
                           {/* FUT 6-stat breakdown */}
                           <div className="stats-grid">
                             <div className="stat-item">
-                              <span className="stat-label">DNC</span>
+                              <span className="stat-label">DAN</span>
                               <span className="stat-val">{Math.round(selectedTrack.danceability)}</span>
                             </div>
                             <div className="stat-item">
@@ -435,12 +414,12 @@ export default function App() {
                               <span className="stat-val">{Math.round(selectedTrack.tempo)}</span>
                             </div>
                             <div className="stat-item">
-                              <span className="stat-label">ACO</span>
-                              <span className="stat-val">{Math.round(selectedTrack.acousticness)}</span>
-                            </div>
-                            <div className="stat-item">
                               <span className="stat-label">LOU</span>
                               <span className="stat-val">{Math.round(selectedTrack.loudness)}</span>
+                            </div>
+                            <div className="stat-item">
+                              <span className="stat-label">ACO</span>
+                              <span className="stat-val">{Math.round(selectedTrack.acousticness)}</span>
                             </div>
                           </div>
 

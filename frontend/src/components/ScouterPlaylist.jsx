@@ -3,10 +3,10 @@ import React, { useEffect, useState } from 'react';
 const API_BASE = 'http://127.0.0.1:8000';
 
 const PLATFORM_META = {
-  spotify_nmf: { label: 'NMF', color: '#1DB954', icon: 's' },
-  pitchfork: { label: 'PFK', color: '#ff4500', icon: 'P' },
-  soundcloud: { label: 'SC', color: '#ff7700', icon: 'S' },
-  fut_classic: { label: 'FUT', color: '#cbf900', icon: 'F' },
+  spotify_nmf: { label: 'NMF', color: '#1DB954', icon: 's', title: 'New Music Friday' },
+  pitchfork: { label: 'PFK', color: '#ff4500', icon: 'P', title: 'Pitchfork' },
+  soundcloud: { label: 'SC', color: '#ff7700', icon: 'S', title: 'SoundCloud' },
+  fut_classic: { label: 'FUT', color: '#cbf900', icon: 'F', title: 'FUT Classic' },
 };
 
 export default function ScouterPlaylist({ onSelectTrack }) {
@@ -214,18 +214,21 @@ export default function ScouterPlaylist({ onSelectTrack }) {
                   }}>
                     {Number(item.vibe_score).toFixed(0)}%
                   </span>
-                  <span style={{
-                    fontSize: '0.5rem',
-                    fontWeight: '800',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: platform.label === 'FUT' ? '#12141c' : '#fff',
-                    background: platform.color,
-                    padding: '0.15rem 0.35rem',
-                    borderRadius: '3px',
-                    lineHeight: '1.2',
-                    opacity: 0.85,
-                  }}>
+                  <span 
+                    title={platform.title || ''}
+                    style={{
+                      fontSize: '0.5rem',
+                      fontWeight: '800',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      color: platform.label === 'FUT' ? '#12141c' : '#fff',
+                      background: platform.color,
+                      padding: '0.15rem 0.35rem',
+                      borderRadius: '3px',
+                      lineHeight: '1.2',
+                      opacity: 0.85,
+                    }}
+                  >
                     {platform.label}
                   </span>
                 </div>

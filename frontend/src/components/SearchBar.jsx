@@ -22,8 +22,16 @@ export default function SearchBar({ onSearch, isLoading, value, onChange }) {
       const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q)}&limit=8`);
       if (res.ok) {
         const data = await res.json();
-        setSuggestions(data);
-        setShowDrop(data.length > 0);
+        const uniqueData = [];
+        const seen = new Set();
+        for (const item of data) {
+          if (item?.id && !seen.has(item.id)) {
+            seen.add(item.id);
+            uniqueData.push(item);
+          }
+        }
+        setSuggestions(uniqueData);
+        setShowDrop(uniqueData.length > 0);
         setActiveIdx(-1);
       }
     } catch { /* silent */ }
@@ -78,13 +86,13 @@ export default function SearchBar({ onSearch, isLoading, value, onChange }) {
           <input
             type="text"
             className="input-field"
-            placeholder="Search song, artist or paste Spotify link..."
+            placeholder="Paste Spotify link..."
             value={value}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
             autoComplete="off"
-            style={{ width: '100%', paddingLeft: '2.75rem', height: '50px' }}
+            style={{ width: '100%', paddingLeft: '2.75rem', paddingRight: '2.75rem', height: '50px' }}
           />
           <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', opacity: 0.5 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -92,6 +100,48 @@ export default function SearchBar({ onSearch, isLoading, value, onChange }) {
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
           </span>
+
+          {value && value.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange('');
+                setSuggestions([]);
+                setShowDrop(false);
+                setActiveIdx(-1);
+              }}
+              style={{
+                position: 'absolute',
+                right: '1rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '4px',
+                borderRadius: '50%',
+                transition: 'all 0.2s ease',
+                zIndex: 10,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#fff';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-muted)';
+                e.currentTarget.style.background = 'none';
+              }}
+              title="Clear search"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          )}
 
           {showDrop && suggestions.length > 0 && (
             <div style={{
@@ -102,7 +152,7 @@ export default function SearchBar({ onSearch, isLoading, value, onChange }) {
             }}>
               {suggestions.map((item, idx) => (
                 <div
-                  key={item.id}
+                  key={`${item.id}-${idx}`}
                   onMouseDown={() => selectSuggestion(item)}
                   onMouseEnter={() => setActiveIdx(idx)}
                   style={{
@@ -136,7 +186,25 @@ export default function SearchBar({ onSearch, isLoading, value, onChange }) {
           ) : 'Scout Vibe'}
         </button>
       </div>
-      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+
+      <div style={{
+        marginTop: '0.65rem',
+        fontSize: '0.78rem',
+        color: 'var(--text-secondary)',
+        textAlign: 'center',
+        opacity: 0.9,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '6px'
+      }}>
+        <span>💡</span>
+        <span>Tip: Search directly for songs or artists featured in past <strong style={{ color: 'var(--fc-lime)', fontWeight: '700' }}>FIFA</strong> soundtracks!</span>
+      </div>
+
+      <style>{`
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      `}</style>
     </form>
   );
 }

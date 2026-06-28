@@ -73,29 +73,6 @@ export default function VibeGauge({ score }) {
           pointerEvents: 'none'
         }}></div>
 
-        <div className="hud-inner-bracket-left" style={{
-          position: 'absolute',
-          left: '25px',
-          width: '6px',
-          height: '40px',
-          borderLeft: `2.5px solid ${strokeColor}`,
-          borderTop: `2.5px solid ${strokeColor}`,
-          borderBottom: `2.5px solid ${strokeColor}`,
-          opacity: 0.8,
-          pointerEvents: 'none'
-        }}></div>
-
-        <div className="hud-inner-bracket-right" style={{
-          position: 'absolute',
-          right: '25px',
-          width: '6px',
-          height: '40px',
-          borderRight: `2.5px solid ${strokeColor}`,
-          borderTop: `2.5px solid ${strokeColor}`,
-          borderBottom: `2.5px solid ${strokeColor}`,
-          opacity: 0.8,
-          pointerEvents: 'none'
-        }}></div>
 
         <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', zIndex: 1 }}>
           <defs>

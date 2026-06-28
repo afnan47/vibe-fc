@@ -292,10 +292,22 @@ h1, h2, h3, .sports-font {
   );
 }
 .fut-card.gold .stat-label {
-  color: rgba(30, 27, 10, 0.65);
+  color: #2C2205;
+  font-weight: 700;
+  opacity: 1;
 }
 .fut-card.gold .stat-val {
-  color: #1e1b0a;
+  color: #1A1A1A;
+  font-weight: 900;
+  font-size: 1.35rem;
+}
+.fut-card.gold .song-name,
+.fut-card.gold .song-title {
+  color: #1A1A1A;
+}
+.fut-card.gold .artist-name {
+  color: #2C2205;
+  opacity: 0.9;
 }
 
 .fut-card.silver {
@@ -476,7 +488,8 @@ h1, h2, h3, .sports-font {
   width: 100%;
   border-top: 1.5px solid rgba(255, 255, 255, 0.25);
   padding-top: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
+  transform: translateY(-5px);
   z-index: 3;
 }
 

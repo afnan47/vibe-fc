@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 const FEATURE_KEYS = ['danceability', 'energy', 'valence', 'tempo', 'loudness', 'acousticness'];
-const FEATURE_LABELS = ['Dance', 'Energy', 'Valence', 'Tempo (BPM)', 'Loudness', 'Acoustic'];
+const FEATURE_LABELS = ['DAN', 'ENG', 'VAL', 'TEM', 'LOU', 'ACO'];
 
 const FEATURE_TOOLTIPS = {
   danceability: {
@@ -138,7 +138,7 @@ export default function FeatureChart({ trackFeatures, averageFeatures }) {
           {gridPolygons.map((points, idx) => (
             <polygon key={`grid-${idx}`} points={points} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
           ))}
-          <polygon points={avgPoints} fill="rgba(138,43,226,0.15)" stroke="var(--fc-purple)" strokeWidth="1.5" strokeDasharray="3 3" />
+          <polygon points={avgPoints} fill="rgba(217, 70, 239, 0.15)" stroke="#D946EF" strokeWidth="2.5" strokeOpacity="0.8" strokeDasharray="3 3" style={{ filter: 'drop-shadow(0 0 3px rgba(217, 70, 239, 0.5))' }} />
           <polygon points={trackPoints} fill="rgba(203,249,0,0.25)" stroke="var(--fc-lime)" strokeWidth="2.5" style={{ filter: 'drop-shadow(0 0 4px rgba(203,249,0,0.3))' }} />
           {FEATURE_KEYS.map((key, idx) => {
             const { x, y } = getCoordinates(idx, normalize(key, trackFeatures[key]));
@@ -176,7 +176,7 @@ export default function FeatureChart({ trackFeatures, averageFeatures }) {
           <span style={{ color: 'var(--text-primary)' }}>This Song</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ display: 'inline-block', width: '12px', height: '12px', background: 'rgba(138,43,226,0.15)', border: '1.5px dashed var(--fc-purple)', borderRadius: '2px' }}></span>
+          <span style={{ display: 'inline-block', width: '12px', height: '12px', background: 'rgba(217, 70, 239, 0.15)', border: '2px dashed #D946EF', borderRadius: '2px' }}></span>
           <span style={{ color: 'var(--text-secondary)' }}>FIFA Vibe Avg</span>
         </div>
       </div>
