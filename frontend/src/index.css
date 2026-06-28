@@ -1,0 +1,295 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: #f3f4f6;
+  background-color: #0b0c10;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Color System */
+  --bg-primary: #0a0b0e;
+  --bg-secondary: #12141c;
+  --bg-tertiary: #191c26;
+  --bg-card: rgba(22, 24, 33, 0.7);
+  --border-color: rgba(255, 255, 255, 0.06);
+  
+  --fc-lime: #cbf900;
+  --fc-lime-glow: rgba(203, 249, 0, 0.2);
+  --fc-purple: #8a2be2;
+  --fc-purple-glow: rgba(138, 43, 226, 0.25);
+  --fc-pink: #ff007f;
+  --fc-blue: #00e5ff;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --fut-gold-grad: linear-gradient(135deg, #ffe066 0%, #f5af19 50%, #e65c00 100%);
+  --fut-purple-grad: linear-gradient(135deg, #8a2be2 0%, #4a00e0 100%);
+  --fut-vibe-grad: linear-gradient(135deg, #cbf900 0%, #00e5ff 100%);
+  --card-border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(138, 43, 226, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(0, 229, 255, 0.12) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(20, 22, 30, 0.5) 0px, transparent 100%),
+    linear-gradient(rgba(255, 255, 255, 0.003) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.003) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  overflow-x: hidden;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fc-lime);
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0% { transform: scale(0.98); opacity: 0.8; }
+  50% { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(0.98); opacity: 0.8; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+/* Common Layout Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: var(--card-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: var(--card-shadow);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* FUT Card Style */
+.fut-card {
+  width: 250px;
+  height: 380px;
+  background: linear-gradient(135deg, #1d212d 0%, #0d0f15 100%);
+  border: 2px solid #555;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  font-weight: 700;
+  transition: all 0.5s ease;
+  animation: float 6s ease-in-out infinite;
+}
+
+.fut-card.gold {
+  background: linear-gradient(135deg, #ffe066 0%, #f5af19 50%, #e65c00 100%);
+  border-color: #ffd700;
+  color: #12141c;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+.fut-card.gold .label {
+  color: rgba(18, 20, 28, 0.7);
+}
+
+.fut-card.silver {
+  background: linear-gradient(135deg, #eef2f3 0%, #8e9eab 100%);
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.fut-card.silver .label {
+  color: rgba(17, 24, 39, 0.7);
+}
+
+.fut-card.bronze {
+  background: linear-gradient(135deg, #b79891 0%, #94716b 100%);
+  border-color: #a78bfa;
+  color: #fff;
+}
+
+.fut-card.vibe-active {
+  border-color: var(--fc-lime);
+  box-shadow: 0 0 25px var(--fc-lime-glow);
+}
+
+.fut-card .badge-rating {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fut-card .rating-val {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.fut-card .position-val {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.fut-card .card-art {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 2.5rem;
+}
+
+.fut-card .song-name {
+  font-size: 1.1rem;
+  text-align: center;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.2rem;
+}
+
+.fut-card .artist-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+  max-width: 95%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 1.5rem;
+}
+
+.fut-card .stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  gap: 0.5rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 0.75rem;
+}
+
+.fut-card.gold .stats-grid {
+  border-top-color: rgba(0, 0, 0, 0.15);
+}
+
+.fut-card .stat-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.fut-card .stat-val {
+  font-weight: 800;
+}
+
+.fut-card .stat-label {
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+/* Button & Inputs style */
+.btn-primary {
+  background: var(--fut-vibe-grad);
+  color: var(--bg-primary);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(203, 249, 0, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.input-field {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: var(--fc-lime);
+  box-shadow: 0 0 10px rgba(203, 249, 0, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+}
