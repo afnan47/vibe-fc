@@ -30,10 +30,9 @@ export default function App() {
   const [trackInput, setTrackInput] = useState('');
   const [presets, setPresets] = useState([]);
 
-  // Fetch playlist averages, history, and random presets on mount
+  // Fetch playlist averages and random presets on mount
   useEffect(() => {
     fetchStats();
-    fetchHistory();
     fetchPresets();
   }, []);
 
@@ -96,18 +95,6 @@ export default function App() {
     }
   };
 
-  const fetchHistory = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/history`);
-      if (res.ok) {
-        const data = await res.json();
-        setHistory(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch history:", err);
-    }
-  };
-
   const handleSearch = async (inputString) => {
     setIsLoading(true);
     setError(null);
@@ -126,7 +113,7 @@ export default function App() {
         navigator.vibrate([100, 50, 100]);
       }
       
-      fetchHistory(); // Refresh history list
+      setHistory(prev => [data, ...prev].slice(0, 10)); // Add to session history
     } catch (err) {
       setError(err.message);
       setSelectedTrack(null);
@@ -452,19 +439,6 @@ export default function App() {
               </div>
 
               {/* TOTS/Elite badge — inside the left column so it doesn't become a grid item */}
-              {selectedTrack.vibe_score >= 85 && (
-                <div style={{
-                  fontWeight: '900',
-                  fontSize: '0.75rem',
-                  letterSpacing: '2px',
-                  textTransform: 'uppercase',
-                  background: 'linear-gradient(90deg, #ffd700, #ff8c00)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}>
-                  ⭐ TEAM OF THE SEASON
-                </div>
-              )}
             </div>
 
             {/* Right Column: Dashboard Panel */}

@@ -33,7 +33,7 @@ export default function HistoryList({ history, onSelectTrack }) {
     }}>
       {history.map((track, idx) => (
         <div
-          key={track.track_id || idx}
+          key={track.id || track.track_id || idx}
           onClick={() => onSelectTrack(track.track_id)}
           style={{
             display: 'flex',

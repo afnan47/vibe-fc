@@ -215,7 +215,6 @@ async def get_history(limit: int = 10):
     if not client:
         return []
     try:
-        # Fetch the most recent cache entries
         res = client.table("track_cache").select("*").order("created_at", desc=True).limit(limit).execute()
         return res.data or []
     except Exception as e:
