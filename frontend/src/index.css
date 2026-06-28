@@ -1,7 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px;
   line-height: 1.5;
   font-weight: 400;
 
@@ -150,11 +151,44 @@ h1, h2, h3, .sports-font {
 
 .main-app-grid {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 340px 1fr 500px;
+  grid-template-areas: "scout showcase leaderboard";
   gap: 1.5rem;
   flex: 1;
   min-height: 0;
   align-items: stretch;
+}
+
+@media (max-width: 1400px) {
+  .main-app-grid {
+    grid-template-columns: 320px 1fr 420px;
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 1199px) {
+  .main-app-grid {
+    grid-template-columns: 340px 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas: 
+      "scout showcase"
+      "leaderboard showcase";
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .main-app-grid {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    grid-template-rows: none;
+    grid-template-areas: none;
+    gap: 0;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
 }
 
 .glass-card {
@@ -197,8 +231,8 @@ h1, h2, h3, .sports-font {
 }
 
 .fut-card {
-  width: 280px;
-  height: 420px;
+  width: 300px;
+  height: 440px;
   background: linear-gradient(135deg, #101523 0%, #060910 100%);
   clip-path: polygon(0% 12%, 8% 12%, 11% 9%, 17% 8%, 23% 4%, 35% 1%, 50% 0%, 65% 1%, 77% 4%, 83% 8%, 89% 9%, 92% 12%, 100% 12%, 100% 82%, 50% 100%, 0% 82%);
   position: relative;
@@ -206,7 +240,7 @@ h1, h2, h3, .sports-font {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.5rem 1rem 1rem 1rem;
+  padding: 1.6rem 1.1rem 1.1rem 1.1rem;
   font-weight: 700;
   transition: transform 0.1s ease-out;
   transform-style: preserve-3d;
@@ -216,9 +250,9 @@ h1, h2, h3, .sports-font {
 
 @media (min-height: 850px) {
   .fut-card {
-    width: 310px;
-    height: 465px;
-    padding: 1.75rem 1.25rem 1.25rem 1.25rem;
+    width: 330px;
+    height: 490px;
+    padding: 1.85rem 1.35rem 1.35rem 1.35rem;
   }
 }
 
@@ -299,7 +333,7 @@ h1, h2, h3, .sports-font {
 .fut-card.gold .stat-val {
   color: #1A1A1A;
   font-weight: 900;
-  font-size: 1.35rem;
+  font-size: 1.55rem;
 }
 .fut-card.gold .song-name,
 .fut-card.gold .song-title {
@@ -403,14 +437,14 @@ h1, h2, h3, .sports-font {
 }
 
 .fut-card .rating-val {
-  font-size: 3rem;
+  font-size: 3.6rem;
   font-weight: 900;
   font-family: 'Barlow Condensed', sans-serif;
   font-style: italic;
 }
 
 .fut-card .position-val {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: 0.5px;
 }
@@ -424,8 +458,8 @@ h1, h2, h3, .sports-font {
 }
 
 .fut-card .card-art {
-  width: 130px;
-  height: 130px;
+  width: 140px;
+  height: 140px;
   border-radius: 8px;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
@@ -440,14 +474,10 @@ h1, h2, h3, .sports-font {
   z-index: 3;
 }
 
-.fut-card .card-art:hover {
-  transform: translateZ(55px) scale(1.05);
-}
-
 @media (min-height: 850px) {
   .fut-card .card-art {
-    width: 155px;
-    height: 155px;
+    width: 165px;
+    height: 165px;
     margin-top: 0.75rem;
     margin-bottom: 0.75rem;
   }
@@ -455,7 +485,7 @@ h1, h2, h3, .sports-font {
 
 .fut-card .song-name {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 1.4rem;
+  font-size: 1.75rem;
   font-weight: 900;
   text-align: center;
   text-transform: uppercase;
@@ -463,13 +493,13 @@ h1, h2, h3, .sports-font {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
   margin-bottom: 0.05rem;
   z-index: 3;
 }
 
 .fut-card .artist-name {
-  font-size: 0.85rem;
+  font-size: 1.05rem;
   font-weight: 700;
   text-align: center;
   max-width: 95%;
@@ -506,14 +536,14 @@ h1, h2, h3, .sports-font {
 }
 
 .fut-card .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 800;
   text-transform: uppercase;
   opacity: 0.75;
 }
 
 .fut-card .stat-val {
-  font-size: 1.2rem;
+  font-size: 1.45rem;
   font-weight: 900;
   font-family: 'Barlow Condensed', sans-serif;
   font-style: italic;
@@ -552,8 +582,8 @@ h1, h2, h3, .sports-font {
 /* Skeleton Loading Card matching FUT structure */
 /* ── EAFC-faithful Skeleton Card ─────────────────────────────────────────── */
 .fut-skeleton {
-  width: 280px;
-  height: 420px;
+  width: 300px;
+  height: 440px;
   clip-path: polygon(0% 12%, 8% 12%, 11% 9%, 17% 8%, 23% 4%, 35% 1%, 50% 0%, 65% 1%, 77% 4%, 83% 8%, 89% 9%, 92% 12%, 100% 12%, 100% 82%, 50% 100%, 0% 82%);
 
   /* Gold shimmer matching real card background */
@@ -574,15 +604,15 @@ h1, h2, h3, .sports-font {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.5rem 1rem 1rem;
+  padding: 1.6rem 1.1rem 1.1rem;
   gap: 0.35rem;
 }
 
 @media (min-height: 850px) {
   .fut-skeleton {
-    width: 310px;
-    height: 465px;
-    padding: 1.75rem 1.25rem 1.25rem;
+    width: 330px;
+    height: 490px;
+    padding: 1.85rem 1.35rem 1.35rem;
   }
 }
 
@@ -626,8 +656,8 @@ h1, h2, h3, .sports-font {
 
 /* Photo block — takes up most of the upper half */
 .skel-photo {
-  width: 130px;
-  height: 130px;
+  width: 140px;
+  height: 140px;
   border-radius: 50% 50% 45% 45%;
   background: rgba(0, 0, 0, 0.18);
   margin-top: 0.2rem;
@@ -636,8 +666,8 @@ h1, h2, h3, .sports-font {
 
 @media (min-height: 850px) {
   .skel-photo {
-    width: 155px;
-    height: 155px;
+    width: 165px;
+    height: 165px;
   }
 }
 
@@ -683,12 +713,12 @@ h1, h2, h3, .sports-font {
 }
 
 /* Chip size variants */
-.skel-chip--lg        { width: 28px; height: 22px; border-radius: 3px; }
-.skel-chip--sm        { width: 20px; height: 11px; border-radius: 2px; }
-.skel-chip--name      { width: 90px; height: 10px; margin-top: 0.1rem; }
-.skel-chip--artist    { width: 65px; height: 8px; }
-.skel-chip--stat-label { width: 20px; height: 7px; border-radius: 2px; }
-.skel-chip--stat-val  { width: 16px; height: 12px; border-radius: 2px; }
+.skel-chip--lg        { width: 32px; height: 25px; border-radius: 3px; }
+.skel-chip--sm        { width: 24px; height: 13px; border-radius: 2px; }
+.skel-chip--name      { width: 110px; height: 12px; margin-top: 0.1rem; }
+.skel-chip--artist    { width: 80px; height: 10px; }
+.skel-chip--stat-label { width: 22px; height: 8px; border-radius: 2px; }
+.skel-chip--stat-val  { width: 18px; height: 14px; border-radius: 2px; }
 
 /* Old generic helpers (kept for dashboard skeleton) */
 .skeleton-circle {
@@ -724,11 +754,11 @@ h1, h2, h3, .sports-font {
   background: var(--fut-vibe-grad);
   color: var(--bg-primary);
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.85rem 1.6rem;
   border-radius: 8px;
   font-weight: 800;
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   cursor: pointer;
@@ -755,11 +785,11 @@ h1, h2, h3, .sports-font {
 .input-field {
   background: rgba(255, 255, 255, 0.04);
   border: 1.5px solid var(--border-color);
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.1rem;
   border-radius: 8px;
   color: #fff;
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   outline: none;
   transition: all 0.2s ease;
 }
@@ -1001,3 +1031,224 @@ h1, h2, h3, .sports-font {
 @keyframes eqBar3 { from { height: 40%; } to { height: 100%; } }
 @keyframes eqBar4 { from { height: 80%; } to { height: 20%; } }
 @keyframes eqBar5 { from { height: 30%; } to { height: 75%; } }
+
+/* Pedestal Player Dock beneath FUT Card */
+.player-dock {
+  width: 300px;
+  transition: width 0.15s ease-out;
+}
+@media (min-height: 850px) {
+  .player-dock {
+    width: 330px;
+  }
+}
+
+.spotify-full-link:hover {
+  background: rgba(29, 185, 84, 0.18) !important;
+  border-color: rgba(29, 185, 84, 0.5) !important;
+  transform: translateY(-1px);
+}
+.spotify-full-link:active {
+  transform: translateY(0);
+}
+
+/* ── Responsive Column Wrappers & Tab Controls ────────────────────────────── */
+.app-col-scout {
+  grid-area: scout;
+  height: 100%;
+  min-height: 0;
+}
+.app-col-showcase {
+  grid-area: showcase;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.app-col-leaderboard {
+  grid-area: leaderboard;
+  height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 767px) {
+  .app-col-scout,
+  .app-col-showcase,
+  .app-col-leaderboard {
+    display: none !important;
+  }
+  
+  .app-col-scout.active-tab,
+  .app-col-showcase.active-tab,
+  .app-col-leaderboard.active-tab {
+    display: flex !important;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    gap: 1.25rem;
+    padding-bottom: 1.5rem;
+  }
+}
+
+/* ── App Header Responsiveness ────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.app-header h1 {
+  font-size: 2.4rem;
+  font-weight: 900;
+  font-style: italic;
+  font-family: 'Barlow Condensed', sans-serif;
+  line-height: 1.0;
+  letter-spacing: -0.5px;
+  text-transform: uppercase;
+  background: linear-gradient(to right, #ffffff, #e5c158);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+@media (max-width: 767px) {
+  .app-header {
+    justify-content: center !important;
+    text-align: center;
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1.8rem !important;
+  }
+  
+  .container {
+    padding: 0.75rem 0.75rem 0 0.75rem !important;
+  }
+}
+
+/* ── Bottom Tab Navigation ────────────────────────────────────────────────── */
+.bottom-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .bottom-nav {
+    display: flex;
+    height: 60px;
+    background: rgba(13, 15, 21, 0.95);
+    border-top: 1px solid rgba(212, 175, 55, 0.15);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+    margin: 0 -0.75rem -0.75rem -0.75rem;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+  
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    gap: 2px;
+    outline: none;
+  }
+  
+  .bottom-nav-item.active {
+    color: var(--fc-lime);
+    background: linear-gradient(180deg, rgba(229, 193, 88, 0.05) 0%, transparent 100%);
+  }
+  
+  .bottom-nav-item svg {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.2s ease;
+  }
+  
+  .bottom-nav-item.active svg {
+    transform: scale(1.1);
+  }
+}
+
+/* ── Toast Notifications ──────────────────────────────────────────────────── */
+.vibe-toast {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 15, 21, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid var(--fc-lime);
+  color: #fff;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), 0 0 15px var(--fc-lime-glow);
+  z-index: 9999;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vibe-toast::before {
+  content: '⚽';
+  font-size: 1.05rem;
+}
+
+.reveal-toast {
+  animation: slideInDown 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translate(-50%, -30px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+/* ── Mobile UI Spacing Adjustments ────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .presets-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.ex-btn:hover {
+  background: rgba(203, 249, 0, 0.08) !important;
+  border-color: var(--fc-lime) !important;
+}

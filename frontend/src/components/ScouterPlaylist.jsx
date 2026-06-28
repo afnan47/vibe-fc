@@ -56,12 +56,12 @@ export default function ScouterPlaylist({ onSelectTrack }) {
           alignItems: 'center',
           gap: '0.5rem',
         }}>
-          <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>📡</span>
           <h3 style={{
-            fontSize: '0.85rem',
+            fontSize: '1.3rem',
             fontWeight: '900',
             textTransform: 'uppercase',
             letterSpacing: '1.5px',
+            fontStyle: 'italic',
             color: 'var(--text-primary)',
             margin: 0,
           }}>
@@ -69,15 +69,15 @@ export default function ScouterPlaylist({ onSelectTrack }) {
           </h3>
         </div>
         <span style={{
-          fontSize: '0.6rem',
-          fontWeight: '700',
+          fontSize: '0.75rem',
+          fontWeight: '800',
           textTransform: 'uppercase',
           letterSpacing: '1px',
           color: 'var(--text-muted)',
-          background: 'rgba(255,255,255,0.03)',
-          padding: '0.2rem 0.5rem',
+          background: 'rgba(255,255,255,0.05)',
+          padding: '0.3rem 0.6rem',
           borderRadius: '4px',
-          border: '1px solid rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
         }}>
           Top 10 Daily
         </span>
@@ -115,7 +115,7 @@ export default function ScouterPlaylist({ onSelectTrack }) {
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.45rem',
+          gap: '0.55rem',
           flex: 1,
           overflowY: 'auto',
         }}>
@@ -131,11 +131,11 @@ export default function ScouterPlaylist({ onSelectTrack }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.6rem',
-                  padding: '0.5rem 0.6rem',
+                  gap: '0.75rem',
+                  padding: '0.65rem 0.8rem',
                   background: 'rgba(255,255,255,0.015)',
                   border: '1px solid rgba(255,255,255,0.04)',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   position: 'relative',
@@ -143,14 +143,14 @@ export default function ScouterPlaylist({ onSelectTrack }) {
               >
                 {/* Rank badge */}
                 <div style={{
-                  width: '22px',
-                  height: '22px',
+                  width: '28px',
+                  height: '28px',
                   borderRadius: '6px',
                   background: 'rgba(255,255,255,0.04)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.65rem',
+                  fontSize: '0.85rem',
                   fontWeight: '900',
                   color: getScoreColor(item.vibe_score),
                   flexShrink: 0,
@@ -160,40 +160,41 @@ export default function ScouterPlaylist({ onSelectTrack }) {
 
                 {/* Cover art */}
                 <div style={{
-                  width: '34px',
-                  height: '34px',
+                  width: '40px',
+                  height: '40px',
                   borderRadius: '6px',
                   flexShrink: 0,
                   background: cache.cover_art_url ? `url(${cache.cover_art_url}) center/cover` : 'rgba(255,255,255,0.04)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.7rem',
+                  fontSize: '0.9rem',
                 }}>
                   {!cache.cover_art_url && '🎵'}
                 </div>
 
                 {/* Track info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: '0.75rem',
-                    fontWeight: '700',
-                    color: 'var(--text-primary)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    lineHeight: 1.3,
-                  }}>
+                   <div style={{
+                     fontSize: '0.9rem',
+                     fontWeight: '800',
+                     color: 'var(--text-primary)',
+                     whiteSpace: 'nowrap',
+                     overflow: 'hidden',
+                     textOverflow: 'ellipsis',
+                     lineHeight: 1.3,
+                   }}>
                     {cache.title || 'Unknown'}
                   </div>
-                  <div style={{
-                    fontSize: '0.6rem',
-                    color: 'var(--text-secondary)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    lineHeight: 1.3,
-                  }}>
+                   <div style={{
+                     fontSize: '0.75rem',
+                     color: 'var(--text-secondary)',
+                     whiteSpace: 'nowrap',
+                     overflow: 'hidden',
+                     textOverflow: 'ellipsis',
+                     lineHeight: 1.3,
+                     marginTop: '1px',
+                   }}>
                     {cache.artist || 'Unknown'}
                   </div>
                 </div>
@@ -202,14 +203,14 @@ export default function ScouterPlaylist({ onSelectTrack }) {
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.4rem',
+                  gap: '0.5rem',
                   flexShrink: 0,
                 }}>
                   <span style={{
-                    fontSize: '0.7rem',
-                    fontWeight: '800',
+                    fontSize: '0.9rem',
+                    fontWeight: '900',
                     color: getScoreColor(item.vibe_score),
-                    minWidth: '36px',
+                    minWidth: '40px',
                     textAlign: 'right',
                   }}>
                     {Number(item.vibe_score).toFixed(0)}%
@@ -217,14 +218,14 @@ export default function ScouterPlaylist({ onSelectTrack }) {
                   <span 
                     title={platform.title || ''}
                     style={{
-                      fontSize: '0.5rem',
+                      fontSize: '0.65rem',
                       fontWeight: '800',
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
                       color: platform.label === 'FUT' ? '#12141c' : '#fff',
                       background: platform.color,
-                      padding: '0.15rem 0.35rem',
-                      borderRadius: '3px',
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: '3.5px',
                       lineHeight: '1.2',
                       opacity: 0.85,
                     }}

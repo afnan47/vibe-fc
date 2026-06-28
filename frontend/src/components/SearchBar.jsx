@@ -81,8 +81,8 @@ export default function SearchBar({ onSearch, isLoading, value, onChange }) {
 
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-      <div ref={wrapperRef} style={{ display: 'flex', gap: '0.75rem', width: '100%', maxWidth: '700px', margin: '0 auto', position: 'relative' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
+      <div ref={wrapperRef} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', maxWidth: '700px', margin: '0 auto', position: 'relative' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <input
             type="text"
             className="input-field"
@@ -174,9 +174,9 @@ export default function SearchBar({ onSearch, isLoading, value, onChange }) {
           )}
         </div>
 
-        <button type="submit" className="btn-primary" disabled={isLoading} style={{ height: '50px', padding: '0 2rem' }}>
+        <button type="submit" className="btn-primary" disabled={isLoading} style={{ height: '50px', width: '100%', padding: '0 2rem', justifyContent: 'center' }}>
           {isLoading ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
                 <circle cx="12" cy="12" r="10" opacity="0.25"></circle>
                 <path d="M12 2C6.47715 2 2 6.47715 2 12C2 13.579 2.368 15.074 3.02 16.42" strokeDasharray="30" strokeDashoffset="10"></path>
@@ -198,8 +198,7 @@ export default function SearchBar({ onSearch, isLoading, value, onChange }) {
         justifyContent: 'center',
         gap: '6px'
       }}>
-        <span>💡</span>
-        <span>Tip: Search directly for songs or artists featured in past <strong style={{ color: 'var(--fc-lime)', fontWeight: '700' }}>FIFA</strong> soundtracks!</span>
+        <span>Search directly for songs or artists featured in past <strong style={{ color: 'var(--fc-lime)', fontWeight: '700' }}>FIFA</strong> soundtracks!</span>
       </div>
 
       <style>{`

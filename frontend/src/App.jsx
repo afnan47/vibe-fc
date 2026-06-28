@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import SearchBar from './components/SearchBar';
-import VibeGauge from './components/VibeGauge';
-import FeatureChart from './components/FeatureChart';
 import HistoryList from './components/HistoryList';
 import ScouterPlaylist from './components/ScouterPlaylist';
 
@@ -20,11 +18,18 @@ export default function App() {
   const [datasetStats, setDatasetStats] = useState(null);
   const [history, setHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Responsive & Active Tab States
+  const [activeTab, setActiveTab] = useState('scout'); // 'scout' | 'showcase' | 'leaderboard'
+  const [toastMessage, setToastMessage] = useState('');
 
   // Audio Playback State
   const [audio, setAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
 
 
@@ -54,11 +59,35 @@ export default function App() {
     if (audio) {
       audio.pause();
       setIsPlaying(false);
+      setCurrentTime(0);
     }
     if (selectedTrack?.preview_url) {
       const newAudio = new Audio(selectedTrack.preview_url);
-      newAudio.onended = () => setIsPlaying(false);
+      newAudio.onended = () => {
+        setIsPlaying(false);
+        setCurrentTime(0);
+      };
+      newAudio.ontimeupdate = () => {
+        setCurrentTime(newAudio.currentTime);
+      };
+      newAudio.onloadedmetadata = () => {
+        setDuration(newAudio.duration || 30);
+      };
       setAudio(newAudio);
+
+      // Autoplay preview immediately on track selection unless prevented
+      if (selectedTrack.preventAutoplay) {
+        setIsPlaying(false);
+      } else {
+        const playPromise = newAudio.play();
+        if (playPromise !== undefined) {
+          setIsPlaying(true);
+          playPromise.catch(err => {
+            console.warn("Autoplay blocked by browser policy:", err);
+            setIsPlaying(false);
+          });
+        }
+      }
     } else {
       setAudio(null);
     }
@@ -77,9 +106,30 @@ export default function App() {
       audio.pause();
       setIsPlaying(false);
     } else {
-      audio.play();
+      audio.play().then(() => {
+        if (audio.duration) {
+          setDuration(audio.duration);
+        }
+      }).catch(err => console.error("Audio playback interrupted:", err));
       setIsPlaying(true);
     }
+  };
+
+  const handleSeek = (e) => {
+    if (!audio) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const newTime = (clickX / width) * duration;
+    audio.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const formatTime = (secs) => {
+    if (isNaN(secs)) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
 
@@ -96,10 +146,17 @@ export default function App() {
     }
   };
 
-  const handleSearch = async (inputString) => {
+  const handleSearch = async (inputString, isManualSearch = false) => {
     setIsLoading(true);
+    if (isManualSearch) {
+      setIsSearchLoading(true);
+    }
     setError(null);
-    setTrackInput(inputString); // populate the search input box
+    if (isManualSearch) {
+      setTrackInput(inputString); // populate the search input box
+    } else {
+      setTrackInput(''); // Clear the search bar when selecting from lists/presets
+    }
     try {
       const res = await fetch(`${API_BASE}/api/vibe?track_input=${encodeURIComponent(inputString)}`);
       if (!res.ok) {
@@ -107,13 +164,27 @@ export default function App() {
         throw new Error(errData.detail || "Failed to analyze track.");
       }
       const data = await res.json();
-      setSelectedTrack(data);
-      setTrackInput(`${data.title} — ${data.artist}`);
+      const isLink = /https?:\/\//i.test(inputString) || inputString.includes('spotify.com') || inputString.includes('spotify:track:');
+      setSelectedTrack({
+        ...data,
+        preventAutoplay: isLink
+      });
+      if (isManualSearch) {
+        setTrackInput(`${data.title} — ${data.artist}`);
+      } else {
+        setTrackInput('');
+      }
       
       // Haptic feedback trigger (vibrate 100ms, pause 50ms, vibrate 100ms)
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate([100, 50, 100]);
       }
+      
+      // Trigger toast notification when song loaded
+      setToastMessage(`Loaded: ${data.title} (${Math.round(data.vibe_score)}% VIB)`);
+      setTimeout(() => {
+        setToastMessage(prev => prev.startsWith(`Loaded: ${data.title}`) ? '' : prev);
+      }, 3000);
       
       setHistory(prev => {
         const filtered = prev.filter(t => (t.id || t.track_id) !== (data.id || data.track_id));
@@ -124,6 +195,7 @@ export default function App() {
       setSelectedTrack(null);
     } finally {
       setIsLoading(false);
+      setIsSearchLoading(false);
     }
   };
 
@@ -162,53 +234,95 @@ export default function App() {
 
   return (
     <div className="container">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="vibe-toast reveal-toast">
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* Header Banner */}
-      <header style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '2rem',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        paddingBottom: '0.6rem',
-        marginBottom: '0.75rem',
-        flexShrink: 0,
-      }}>
+      <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div>
-            <h1 style={{
-              fontSize: '2.4rem',
-              fontWeight: '900',
-              fontStyle: 'italic',
-              fontFamily: "'Barlow Condensed', sans-serif",
-              lineHeight: '1.0',
-              letterSpacing: '-0.5px',
-              textTransform: 'uppercase',
-              background: 'linear-gradient(to right, #ffffff, #e5c158)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              margin: 0
-            }}>
+            <h1>
               FUT VIBE <span style={{ color: 'var(--fc-lime)', WebkitTextFillColor: 'var(--fc-lime)' }}>FC</span>
             </h1>
           </div>
         </div>
-
-        {/* Inline Search Bar */}
-        <div style={{ flex: 1, maxWidth: '500px' }}>
-          <SearchBar onSearch={handleSearch} isLoading={isLoading} value={trackInput} onChange={setTrackInput} />
-        </div>
       </header>
 
-      {/* Main Grid: Left Column Dashboard + Right Column Scouter */}
+      {/* Main Grid: 3 columns */}
       <div className="main-app-grid">
-        {/* Left Column — Dashboard Panel */}
-        <div style={{ 
-          minWidth: 0, 
-          height: '100%', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          justifyContent: 'space-between', 
-          gap: '0.75rem' 
+        {/* Column 1: Left Sidebar (Search + Recent Scouts) */}
+        <div className={`glass-card app-col-scout ${activeTab === 'scout' ? 'active-tab' : ''}`} style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
+          height: '100%',
+          minHeight: 0,
+          padding: '1.25rem',
+          boxSizing: 'border-box'
+        }}>
+          <div>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: '900',
+              textTransform: 'uppercase',
+              letterSpacing: '1.5px',
+              fontStyle: 'italic',
+              color: 'var(--text-primary)',
+              marginBottom: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+              margin: '0 0 0.75rem 0'
+            }}>Scout Track
+            </h3>
+            <SearchBar onSearch={(val) => handleSearch(val, true)} isLoading={isSearchLoading} value={trackInput} onChange={setTrackInput} />
+          </div>
+
+          <div style={{
+            width: '100%',
+            height: '1.5px',
+            background: 'rgba(255, 255, 255, 0.06)',
+          }}></div>
+
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            overflow: 'hidden'
+          }}>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: '900',
+              textTransform: 'uppercase',
+              letterSpacing: '1.5px',
+              fontStyle: 'italic',
+              color: 'var(--text-primary)',
+              marginBottom: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+              margin: '0 0 0.75rem 0'
+            }}>Recent Scouts
+            </h3>
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+              <HistoryList history={history} onSelectTrack={(val) => handleSearch(val, false)} layout="vertical" />
+            </div>
+          </div>
+        </div>
+
+        {/* Column 2: Center Showcase Area */}
+        <div className={`app-col-showcase ${activeTab === 'showcase' ? 'active-tab' : ''}`} style={{
+          minWidth: 0,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>
           {error && (
             <div style={{
@@ -219,252 +333,421 @@ export default function App() {
               borderRadius: '8px',
               fontSize: '0.8rem',
               textAlign: 'center',
-              flexShrink: 0
+              flexShrink: 0,
+              width: '100%',
+              marginBottom: '1rem'
             }}>
               Warning: {error}
             </div>
           )}
 
-          {/* Results / Center Area */}
           <div style={{
             flex: 1,
-            minHeight: 0,
-            display: 'grid',
-            gridTemplateColumns: (isLoading || selectedTrack) ? 'auto 1fr' : '1fr',
-            gap: '1.5rem',
+            width: '100%',
+            height: '100%',
+            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '100%',
+            minHeight: 0,
           }}>
             {isLoading ? (
-              <>
-                {/* Left Column: Pulse Skeleton Card */}
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.75rem',
-                  flexShrink: 0
+              /* Pulse Skeleton Card */
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.75rem',
+                flexShrink: 0
+              }}>
+                <h2 style={{
+                  fontSize: '0.85rem',
+                  fontWeight: '800',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1.5px',
+                  color: 'var(--fc-lime)',
+                  textShadow: '0 0 10px var(--fc-lime-glow)',
+                  margin: '0 0 0.5rem 0'
                 }}>
-                  <h2 style={{
-                    fontSize: '0.85rem',
-                    fontWeight: '800',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1.5px',
-                    color: 'var(--fc-lime)',
-                    textShadow: '0 0 10px var(--fc-lime-glow)'
-                  }}>
-                    Scouting Song Pack...
-                  </h2>
-                  <div className="fut-card-wrapper">
-                    <div className="fut-card-border-glow" style={{ animation: 'borderGlowPulse 1.5s infinite ease-in-out' }}>
-                      <div className="fut-skeleton">
-                        {/* Top-left: rating + position block */}
-                        <div className="skel-rating-block">
-                          <div className="skel-chip skel-chip--lg"></div>
-                          <div className="skel-chip skel-chip--sm"></div>
-                          {/* Playstyle badge on left edge */}
-                          <div className="skel-playstyle"></div>
+                  Scouting Song Pack...
+                </h2>
+                <div className="fut-card-wrapper">
+                  <div className="fut-card-border-glow" style={{ animation: 'borderGlowPulse 1.5s infinite ease-in-out' }}>
+                    <div className="fut-skeleton">
+                      {/* Top-left: rating + position block */}
+                      <div className="skel-rating-block">
+                        <div className="skel-chip skel-chip--lg"></div>
+                        <div className="skel-chip skel-chip--sm"></div>
+                        {/* Playstyle badge on left edge */}
+                        <div className="skel-playstyle"></div>
+                      </div>
+
+                      {/* Photo area */}
+                      <div className="skel-photo"></div>
+
+                      {/* Divider */}
+                      <div className="skel-divider"></div>
+
+                      {/* Song name + artist */}
+                      <div className="skel-chip skel-chip--name"></div>
+                      <div className="skel-chip skel-chip--artist"></div>
+
+                      {/* 6-stat row */}
+                      <div className="skel-stats-row">
+                        {[0, 1, 2, 3, 4, 5].map(i => (
+                          <div key={i} className="skel-stat-col">
+                            <div className="skel-chip skel-chip--stat-label"></div>
+                            <div className="skel-chip skel-chip--stat-val"></div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Bottom: 3 badge circles (flag / league / club) */}
+                      <div className="skel-badges-row">
+                        <div className="skel-badge-circle"></div>
+                        <div className="skel-badge-circle"></div>
+                        <div className="skel-badge-circle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : selectedTrack ? (
+              /* FUT Player-Style Song Card */
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '1.25rem',
+                flexShrink: 0
+              }}>
+                <div 
+                  className="fut-card-wrapper"
+                  onMouseMove={(e) => {
+                    const card = e.currentTarget.querySelector('.fut-card-border-glow');
+                    if (!card) return;
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const midX = rect.width / 2;
+                    const midY = rect.height / 2;
+                    const rotX = -((y - midY) / midY) * 15; // Max 15deg tilt
+                    const rotY = ((x - midX) / midX) * 15;
+                    
+                    card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.03)`;
+                    card.style.setProperty('--sheen-x', `${(x / rect.width) * 100 - 50}%`);
+                    card.style.setProperty('--sheen-y', `${(y / rect.height) * 100 - 50}%`);
+                  }}
+                  onMouseLeave={(e) => {
+                    const card = e.currentTarget.querySelector('.fut-card-border-glow');
+                    if (!card) return;
+                    card.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1)';
+                    card.style.setProperty('--sheen-x', '0%');
+                    card.style.setProperty('--sheen-y', '0%');
+                  }}
+                >
+                  {/* Key on outer wrapper resets the entire card stack on track change */}
+                  <div className="vibe-active-glow" key={selectedTrack.id}>
+                    <div className="fut-card-border-glow reveal-anim">
+                      <div className={`fut-card ${getCardClass(selectedTrack.vibe_score)}`}>
+                        {/* Rating badge */}
+                        <div className="badge-rating">
+                          <span className="rating-val">{Math.round(selectedTrack.vibe_score)}</span>
+                          <span className="position-val">VIB</span>
                         </div>
 
-                        {/* Photo area */}
-                        <div className="skel-photo"></div>
+                        {/* Cover art area — clean, no overlay */}
+                        <div 
+                          className={`card-art ${isPlaying ? 'playing' : ''}`}
+                          style={{
+                            backgroundImage: selectedTrack?.cover_art_url ? `url(${selectedTrack.cover_art_url})` : 'none',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            position: 'relative'
+                          }}
+                        >
+                          {!selectedTrack?.cover_art_url && <span>🎵</span>}
+                        </div>
+                        
+                        {/* Horizontal divider line like player card */}
+                        <div style={{
+                          width: '80%',
+                          height: '1.5px',
+                          background: 'rgba(255, 255, 255, 0.18)',
+                          margin: '0.25rem 0 0.5rem 0'
+                        }}></div>
 
-                        {/* Divider */}
-                        <div className="skel-divider"></div>
-
-                        {/* Song name + artist */}
-                        <div className="skel-chip skel-chip--name"></div>
-                        <div className="skel-chip skel-chip--artist"></div>
-
-                        {/* 6-stat row */}
-                        <div className="skel-stats-row">
-                          {[0,1,2,3,4,5].map(i => (
-                            <div key={i} className="skel-stat-col">
-                              <div className="skel-chip skel-chip--stat-label"></div>
-                              <div className="skel-chip skel-chip--stat-val"></div>
-                            </div>
-                          ))}
+                        {/* Title & Artist */}
+                        <div className="song-name">
+                          {selectedTrack?.title}
+                        </div>
+                        <div className="artist-name">
+                          {selectedTrack?.artist}
+                        </div>
+                        
+                        {/* FUT 6-stat breakdown */}
+                        <div className="stats-grid">
+                          <div className="stat-item">
+                            <span className="stat-label">DAN</span>
+                            <span className="stat-val">{Math.round(selectedTrack.danceability)}</span>
+                          </div>
+                          <div className="stat-item">
+                            <span className="stat-label">ENG</span>
+                            <span className="stat-val">{Math.round(selectedTrack.energy)}</span>
+                          </div>
+                          <div className="stat-item">
+                            <span className="stat-label">VAL</span>
+                            <span className="stat-val">{Math.round(selectedTrack.valence)}</span>
+                          </div>
+                          <div className="stat-item">
+                            <span className="stat-label">TEM</span>
+                            <span className="stat-val">{Math.round(selectedTrack.tempo)}</span>
+                          </div>
+                          <div className="stat-item">
+                            <span className="stat-label">LOU</span>
+                            <span className="stat-val">{Math.round(selectedTrack.loudness)}</span>
+                          </div>
+                          <div className="stat-item">
+                            <span className="stat-label">ACO</span>
+                            <span className="stat-val">{Math.round(selectedTrack.acousticness)}</span>
+                          </div>
                         </div>
 
-                        {/* Bottom: 3 badge circles (flag / league / club) */}
-                        <div className="skel-badges-row">
-                          <div className="skel-badge-circle"></div>
-                          <div className="skel-badge-circle"></div>
-                          <div className="skel-badge-circle"></div>
+                        {/* Bottom badge row: Spotify logo only */}
+                        <div className="badges-row">
+                          <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '15px', height: '15px', opacity: 0.75 }}>
+                            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.377-1.454-5.37-1.783-8.894-.982-.336.075-.668-.135-.744-.47-.077-.336.135-.668.47-.743 3.856-.88 7.15-.506 9.822 1.13.294.178.385.56.203.858zm1.224-2.723c-.226.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.076-1.183-.412.125-.845-.107-.97-.52-.125-.413.107-.847.52-.97 3.666-1.11 8.24-.57 11.34 1.34.368.226.488.708.26 1.073zm.106-2.833C14.385 8.81 8.566 8.62 5.176 9.648a1.008 1.008 0 0 1-1.224-.714c-.156-.514.137-1.06.65-1.217 3.882-1.18 10.312-.96 14.373 1.452.46.273.612.87.34 1.33-.273.46-.87.61-1.33.34z"/>
+                          </svg>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Column: Pulse Skeleton Dashboard */}
-                <div className="glass-card" style={{
-                  height: '100%',
-                  padding: '2rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  gap: '2rem',
-                  margin: 0,
-                  boxSizing: 'border-box'
-                }}>
-                  <div className="skeleton-circle" style={{ width: '160px', height: '160px' }}></div>
-                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div className="skeleton-text" style={{ width: '90%' }}></div>
-                    <div className="skeleton-text" style={{ width: '75%' }}></div>
-                    <div className="skeleton-text" style={{ width: '85%' }}></div>
-                  </div>
-                </div>
-              </>
-            ) : selectedTrack ? (
-              <>
-                {/* Left Column: FUT Player-Style Song Card */}
+                {/* Pedestal Dock Player */}
                 <div style={{
+                  backgroundColor: 'rgba(13, 15, 21, 0.85)',
+                  border: selectedTrack.preview_url ? '1px solid rgba(229, 193, 88, 0.25)' : '1px dashed rgba(255, 255, 255, 0.12)',
+                  borderRadius: '12px',
+                  padding: '1rem 1.25rem',
                   display: 'flex',
                   flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   gap: '0.75rem',
-                  flexShrink: 0
-                }}>
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                  transition: 'border-color 0.3s ease',
+                  boxSizing: 'border-box',
+                }} className="player-dock">
                   
-                  <div 
-                    className="fut-card-wrapper"
-                    onMouseMove={(e) => {
-                      const card = e.currentTarget.querySelector('.fut-card-border-glow');
-                      if (!card) return;
-                      const rect = card.getBoundingClientRect();
-                      const x = e.clientX - rect.left;
-                      const y = e.clientY - rect.top;
-                      const midX = rect.width / 2;
-                      const midY = rect.height / 2;
-                      const rotX = -((y - midY) / midY) * 15; // Max 15deg tilt
-                      const rotY = ((x - midX) / midX) * 15;
-                      
-                      card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.03)`;
-                      card.style.setProperty('--sheen-x', `${(x / rect.width) * 100 - 50}%`);
-                      card.style.setProperty('--sheen-y', `${(y / rect.height) * 100 - 50}%`);
-                    }}
-                    onMouseLeave={(e) => {
-                      const card = e.currentTarget.querySelector('.fut-card-border-glow');
-                      if (!card) return;
-                      card.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1)';
-                      card.style.setProperty('--sheen-x', '0%');
-                      card.style.setProperty('--sheen-y', '0%');
-                    }}
-                  >
-                    {/* Key on outer wrapper resets the entire card stack on track change */}
-                    <div className="vibe-active-glow" key={selectedTrack.id}>
-                      <div className="fut-card-border-glow reveal-anim">
-                        <div className={`fut-card ${getCardClass(selectedTrack.vibe_score)}`}>
-                          {/* Rating badge */}
-                          <div className="badge-rating">
-                            <span className="rating-val">{Math.round(selectedTrack.vibe_score)}</span>
-                            <span className="position-val">VIB</span>
-                          </div>
+                  {/* Row 1: Controls (if preview is available) or status banner */}
+                  {selectedTrack.preview_url ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', width: '100%' }}>
+                      <button
+                        onClick={togglePlay}
+                        style={{
+                          width: '46px',
+                          height: '46px',
+                          borderRadius: '50%',
+                          flexShrink: 0,
+                          border: 'none',
+                          background: isPlaying ? 'var(--fc-lime)' : 'rgba(255, 255, 255, 0.08)',
+                          color: isPlaying ? '#12141c' : 'var(--fc-lime)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease',
+                          boxShadow: isPlaying ? '0 0 12px var(--fc-lime-glow)' : 'none',
+                        }}
+                        aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
+                      >
+                        {isPlaying ? (
+                          <svg width="14" height="16" viewBox="0 0 12 14" fill="currentColor"><rect x="0" y="0" width="4" height="14" rx="1" /><rect x="8" y="0" width="4" height="14" rx="1" /></svg>
+                        ) : (
+                          <svg width="14" height="16" viewBox="0 0 12 14" fill="currentColor" style={{ marginLeft: '3px' }}><polygon points="0,0 12,7 0,14" /></svg>
+                        )}
+                      </button>
 
-                          {/* Cover art area — clean, no overlay */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-end',
+                          marginBottom: '4px',
+                          gap: '0.5rem',
+                          width: '100%'
+                        }}>
+                          <span style={{
+                            fontSize: '0.92rem',
+                            fontWeight: '850',
+                            color: '#fff',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            flex: 1
+                          }}>
+                            {selectedTrack.title}
+                          </span>
+                          <span style={{
+                            fontSize: '0.78rem',
+                            fontWeight: '700',
+                            color: 'var(--text-secondary)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '45%'
+                          }}>
+                            {selectedTrack.artist}
+                          </span>
+                        </div>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: '0.88rem',
+                          fontWeight: '700',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <span>{formatTime(currentTime)}</span>
                           <div 
-                            className={`card-art ${isPlaying ? 'playing' : ''}`}
+                            onClick={handleSeek}
                             style={{
-                              backgroundImage: selectedTrack?.cover_art_url ? `url(${selectedTrack.cover_art_url})` : 'none',
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
-                              position: 'relative'
+                              flex: 1,
+                              height: '8px',
+                              background: 'rgba(255, 255, 255, 0.1)',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              position: 'relative',
+                              overflow: 'hidden'
                             }}
                           >
-                            {!selectedTrack?.cover_art_url && <span>🎵</span>}
+                            <div style={{
+                              width: `${(currentTime / (duration || 1)) * 100}%`,
+                              height: '100%',
+                              background: 'var(--fc-lime)',
+                              borderRadius: '4px',
+                              transition: 'width 0.1s linear'
+                            }} />
                           </div>
-                          
-                          {/* Horizontal divider line like player card */}
-                          <div style={{
-                            width: '80%',
-                            height: '1.5px',
-                            background: 'rgba(255, 255, 255, 0.18)',
-                            margin: '0.25rem 0 0.5rem 0'
-                          }}></div>
-
-                          {/* Title & Artist */}
-                          <div className="song-name">
-                            {selectedTrack?.title}
-                          </div>
-                          <div className="artist-name">
-                            {selectedTrack?.artist}
-                          </div>
-                          
-                          {/* FUT 6-stat breakdown */}
-                          <div className="stats-grid">
-                            <div className="stat-item">
-                              <span className="stat-label">DAN</span>
-                              <span className="stat-val">{Math.round(selectedTrack.danceability)}</span>
-                            </div>
-                            <div className="stat-item">
-                              <span className="stat-label">ENG</span>
-                              <span className="stat-val">{Math.round(selectedTrack.energy)}</span>
-                            </div>
-                            <div className="stat-item">
-                              <span className="stat-label">VAL</span>
-                              <span className="stat-val">{Math.round(selectedTrack.valence)}</span>
-                            </div>
-                            <div className="stat-item">
-                              <span className="stat-label">TEM</span>
-                              <span className="stat-val">{Math.round(selectedTrack.tempo)}</span>
-                            </div>
-                            <div className="stat-item">
-                              <span className="stat-label">LOU</span>
-                              <span className="stat-val">{Math.round(selectedTrack.loudness)}</span>
-                            </div>
-                            <div className="stat-item">
-                              <span className="stat-label">ACO</span>
-                              <span className="stat-val">{Math.round(selectedTrack.acousticness)}</span>
-                            </div>
-                          </div>
-
-                          {/* Bottom badge row: Spotify logo only */}
-                          <div className="badges-row">
-                            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '15px', height: '15px', opacity: 0.75 }}>
-                              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.377-1.454-5.37-1.783-8.894-.982-.336.075-.668-.135-.744-.47-.077-.336.135-.668.47-.743 3.856-.88 7.15-.506 9.822 1.13.294.178.385.56.203.858zm1.224-2.723c-.226.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.076-1.183-.412.125-.845-.107-.97-.52-.125-.413.107-.847.52-.97 3.666-1.11 8.24-.57 11.34 1.34.368.226.488.708.26 1.073zm.106-2.833C14.385 8.81 8.566 8.62 5.176 9.648a1.008 1.008 0 0 1-1.224-.714c-.156-.514.137-1.06.65-1.217 3.882-1.18 10.312-.96 14.373 1.452.46.273.612.87.34 1.33-.273.46-.87.61-1.33.34z"/>
-                            </svg>
-                          </div>
+                          <span>{formatTime(duration)}</span>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Right Column: Dashboard Panel */}
-                <div className="glass-card" style={{
-                  height: '100%',
-                  padding: '1.5rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  margin: 0,
-                  boxSizing: 'border-box'
-                }}>
-                  {/* Standard Dashboard details (Radar + Gauge) */}
+                      {isPlaying && (
+                        <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-end', height: '22px', width: '24px', flexShrink: 0 }}>
+                          {[1,2,3,4,5].map(i => (
+                            <div key={i} style={{ width: '3px', background: 'var(--fc-lime)', borderRadius: '2px', animation: `eqBar${i} ${0.35 + i * 0.08}s ease-in-out infinite alternate`, height: '100%' }} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      justifyContent: 'center',
+                      fontSize: '0.85rem',
+                      color: 'var(--text-muted)',
+                      fontWeight: '700',
+                      padding: '0.20rem 0'
+                    }}>
+                      ⚠️ Spotify Preview Unavailable for this Song
+                    </div>
+                  )}
+
+                  {/* Horizontal Divider */}
+                  <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.08)', width: '100%' }}></div>
+
+                  {/* Row 2: Metadata & Spotify link */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '2.5rem',
+                    justifyContent: 'space-between',
+                    gap: '0.5rem',
                     width: '100%'
                   }}>
-                    <VibeGauge score={selectedTrack.vibe_score} />
-                    
-                    {datasetStats && (
-                      <FeatureChart 
-                        trackFeatures={selectedTrack} 
-                        averageFeatures={datasetStats.averages} 
-                      />
+                    {selectedTrack.preview_url ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          fontSize: '0.62rem',
+                          fontWeight: '900',
+                          letterSpacing: '1.2px',
+                          textTransform: 'uppercase',
+                          background: 'var(--fc-lime)',
+                          color: '#12141c',
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: '4px',
+                          lineHeight: 1
+                        }}>
+                          Preview
+                        </span>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: '800',
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase',
+                          color: isPlaying ? 'var(--fc-lime)' : 'var(--text-muted)'
+                        }}>
+                          {isPlaying ? 'Playing' : 'Paused'}
+                        </span>
+                      </div>
+                    ) : (
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: '0.9rem',
+                          fontWeight: '800',
+                          color: '#fff',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {selectedTrack.title}
+                        </div>
+                        <div style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--text-secondary)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          marginTop: '1px'
+                        }}>
+                          {selectedTrack.artist}
+                        </div>
+                      </div>
                     )}
+
+                    <a
+                      href={`https://open.spotify.com/track/${selectedTrack.track_id || selectedTrack.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: '800',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        color: '#1DB954',
+                        textDecoration: 'none',
+                        background: 'rgba(29, 185, 84, 0.08)',
+                        border: '1px solid rgba(29, 185, 84, 0.25)',
+                        padding: '0.38rem 0.7rem',
+                        borderRadius: '6px',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0
+                      }}
+                      className="spotify-full-link"
+                    >
+                      <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '13px', height: '13px' }}>
+                        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.377-1.454-5.37-1.783-8.894-.982-.336.075-.668-.135-.744-.47-.077-.336.135-.668.47-.743 3.856-.88 7.15-.506 9.822 1.13.294.178.385.56.203.858zm1.224-2.723c-.226.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.076-1.183-.412.125-.845-.107-.97-.52-.125-.413.107-.847.52-.97 3.666-1.11 8.24-.57 11.34 1.34.368.226.488.708.26 1.073zm.106-2.833C14.385 8.81 8.566 8.62 5.176 9.648a1.008 1.008 0 0 1-1.224-.714c-.156-.514.137-1.06.65-1.217 3.882-1.18 10.312-.96 14.373 1.452.46.273.612.87.34 1.33-.273.46-.87.61-1.33.34z"/>
+                      </svg>
+                      Full Song
+                    </a>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
               /* Empty State: Prompt user or show instructions */
               <div className="glass-card" style={{
@@ -505,7 +788,7 @@ export default function App() {
                   borderTop: '1px solid rgba(255,255,255,0.05)',
                   paddingTop: '1rem'
                 }}>
-                  <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                     <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)' }}>
                       Try one of these FUT Golden standards:
                     </span>
@@ -534,7 +817,7 @@ export default function App() {
                     {presets.map(ex => (
                       <button
                         key={ex.id}
-                        onClick={() => handleSearch(ex.id)}
+                        onClick={() => handleSearch(ex.id, false)}
                         style={{
                           background: 'rgba(255,255,255,0.02)',
                           border: '1px solid rgba(255,255,255,0.05)',
@@ -556,38 +839,52 @@ export default function App() {
               </div>
             )}
           </div>
-
-          {/* Bottom Row: History Panel */}
-          <section className="glass-card ea-slant-top" style={{
-            padding: '0.6rem 1.25rem',
-            flexShrink: 0,
-            overflow: 'hidden'
-          }}>
-            <h3 style={{
-              fontSize: '0.85rem',
-              fontWeight: '800',
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              color: 'var(--text-primary)',
-              marginBottom: '0.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              <span>⏱️</span> Recent Scouts
-            </h3>
-            <HistoryList history={history} onSelectTrack={handleSearch} />
-          </section>
         </div>
 
-        {/* Right Column — Daily Scouter */}
-        <div style={{
+        {/* Column 3: Right Sidebar — Daily Scouter */}
+        <div className={`app-col-leaderboard ${activeTab === 'leaderboard' ? 'active-tab' : ''}`} style={{
           height: '100%',
           minHeight: 0
         }}>
-          <ScouterPlaylist onSelectTrack={handleSearch} />
+          <ScouterPlaylist onSelectTrack={(val) => handleSearch(val, false)} />
         </div>
       </div>
+
+      {/* Bottom Navigation Bar for Mobile */}
+      <nav className="bottom-nav">
+        <button 
+          className={`bottom-nav-item ${activeTab === 'scout' ? 'active' : ''}`}
+          onClick={() => setActiveTab('scout')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span>Scout</span>
+        </button>
+        
+        <button 
+          className={`bottom-nav-item ${activeTab === 'showcase' ? 'active' : ''}`}
+          onClick={() => setActiveTab('showcase')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <span>Showcase</span>
+        </button>
+        
+        <button 
+          className={`bottom-nav-item ${activeTab === 'leaderboard' ? 'active' : ''}`}
+          onClick={() => setActiveTab('leaderboard')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+          </svg>
+          <span>Leaderboard</span>
+        </button>
+      </nav>
 
       <style>{`
         .ex-btn:hover {
@@ -595,70 +892,7 @@ export default function App() {
           border-color: var(--fc-lime) !important;
         }
       `}</style>
-      {/* EA Trax Floating Audio Player */}
-      {selectedTrack?.preview_url && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '1.5rem',
-            right: '1.5rem',
-            zIndex: 999,
-            background: 'rgba(12, 14, 22, 0.95)',
-            border: '1px solid rgba(203, 249, 0, 0.25)',
-            borderRadius: '12px',
-            padding: '0.75rem 1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-            minWidth: '260px',
-            maxWidth: '320px',
-            animation: 'slideInFromRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-          }}
-        >
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, var(--fc-lime), transparent)', borderRadius: '12px 12px 0 0' }} />
-          <div style={{
-            width: '40px', height: '40px', borderRadius: '6px', flexShrink: 0,
-            backgroundImage: selectedTrack.cover_art_url ? `url(${selectedTrack.cover_art_url})` : 'none',
-            backgroundSize: 'cover', backgroundPosition: 'center',
-            backgroundColor: selectedTrack.cover_art_url ? 'transparent' : 'rgba(203,249,0,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem',
-          }}>
-            {!selectedTrack.cover_art_url && '🎵'}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: '700', fontSize: '0.8rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedTrack.title}</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedTrack.artist}</div>
-            {isPlaying && (
-              <div style={{ display: 'flex', gap: '2px', marginTop: '4px', alignItems: 'flex-end', height: '12px' }}>
-                {[1,2,3,4,5].map(i => (
-                  <div key={i} style={{ width: '3px', background: 'var(--fc-lime)', borderRadius: '2px', animation: `eqBar${i} ${0.4 + i * 0.1}s ease-in-out infinite alternate`, height: '100%' }} />
-                ))}
-              </div>
-            )}
-          </div>
-          <button
-            onClick={togglePlay}
-            style={{
-              width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-              border: '1.5px solid rgba(203,249,0,0.4)',
-              background: isPlaying ? 'var(--fc-lime)' : 'transparent',
-              color: isPlaying ? '#12141c' : 'var(--fc-lime)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.2s ease',
-            }}
-            aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-          >
-            {isPlaying ? (
-              <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor"><rect x="0" y="0" width="4" height="14" rx="1.5" /><rect x="8" y="0" width="4" height="14" rx="1.5" /></svg>
-            ) : (
-              <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor"><polygon points="0,0 12,7 0,14" /></svg>
-            )}
-          </button>
-          <div style={{ position: 'absolute', top: '-8px', left: '10px', background: 'var(--fc-lime)', color: '#12141c', fontSize: '0.55rem', fontWeight: '900', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '1px 6px', borderRadius: '4px' }}>EA TRAX</div>
-        </div>
-      )}
+
     </div>
   );
 }
