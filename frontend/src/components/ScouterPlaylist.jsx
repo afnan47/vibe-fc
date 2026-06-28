@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 const API_BASE = 'http://127.0.0.1:8000';
 
@@ -13,9 +13,7 @@ export default function ScouterPlaylist({ onSelectTrack }) {
   const [playlist, setPlaylist] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPlaylist();
-  }, []);
+  const pollingRef = useRef(null);
 
   const fetchPlaylist = async () => {
     setLoading(true);
@@ -24,6 +22,10 @@ export default function ScouterPlaylist({ onSelectTrack }) {
       if (res.ok) {
         const data = await res.json();
         setPlaylist(data || []);
+        if (data && data.length > 0 && pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
       }
     } catch (err) {
       console.error("Failed to fetch scouter playlist:", err);
@@ -31,6 +33,19 @@ export default function ScouterPlaylist({ onSelectTrack }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPlaylist();
+    pollingRef.current = setInterval(() => {
+      fetchPlaylist();
+    }, 10000);
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, []);
 
   const getScoreColor = (score) => {
     if (score >= 90) return 'var(--fc-lime)';

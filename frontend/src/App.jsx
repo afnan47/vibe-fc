@@ -23,8 +23,6 @@ export default function App() {
 
   // Responsive & Active Tab States
   const [activeTab, setActiveTab] = useState('scout'); // 'scout' | 'showcase' | 'leaderboard'
-  const [toastMessage, setToastMessage] = useState('');
-
   // Audio Playback State
   const [audio, setAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -187,11 +185,6 @@ export default function App() {
         navigator.vibrate([100, 50, 100]);
       }
       
-      // Trigger toast notification when song loaded
-      setToastMessage(`Loaded: ${data.title} (${Math.round(data.vibe_score)}% VIB)`);
-      setTimeout(() => {
-        setToastMessage(prev => prev.startsWith(`Loaded: ${data.title}`) ? '' : prev);
-      }, 3000);
       
       setHistory(prev => {
         const filtered = prev.filter(t => (t.id || t.track_id) !== (data.id || data.track_id));
@@ -241,13 +234,6 @@ export default function App() {
 
   return (
     <div className="container">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="vibe-toast reveal-toast">
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       {/* Header Banner */}
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
