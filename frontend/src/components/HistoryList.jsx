@@ -25,26 +25,28 @@ export default function HistoryList({ history, onSelectTrack }) {
   return (
     <div style={{
       display: 'flex',
-      flexDirection: 'column',
-      gap: '0.5rem',
-      maxHeight: '350px',
-      overflowY: 'auto',
-      paddingRight: '4px'
+      flexDirection: 'row',
+      gap: '0.75rem',
+      overflowX: 'auto',
+      overflowY: 'hidden',
+      paddingBottom: '4px',
+      width: '100%',
     }}>
       {history.map((track, idx) => (
         <div
           key={track.id || track.track_id || idx}
-          onClick={() => onSelectTrack(track.track_id)}
+          onClick={() => onSelectTrack(track.track_id || track.id)}
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0.75rem 1rem',
+            padding: '0.65rem 0.9rem',
             background: 'rgba(255, 255, 255, 0.02)',
             border: '1px solid rgba(255, 255, 255, 0.04)',
             borderRadius: '10px',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
+            flexShrink: 0,
+            width: '240px',
           }}
           className="history-item"
         >
@@ -67,7 +69,7 @@ export default function HistoryList({ history, onSelectTrack }) {
             {!track.cover_art_url && '🎵'}
           </div>
 
-          <div style={{ flex: 1, minWidth: 0, paddingRight: '1rem' }}>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
             <h4 style={{
               fontSize: '0.85rem',
               fontWeight: '700',
@@ -79,7 +81,7 @@ export default function HistoryList({ history, onSelectTrack }) {
               {track.title || 'Unknown Song'}
             </h4>
             <p style={{
-              fontSize: '0.7rem',
+              fontSize: '0.72rem',
               color: 'var(--text-secondary)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
@@ -93,7 +95,7 @@ export default function HistoryList({ history, onSelectTrack }) {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.75rem'
+            flexShrink: 0
           }}>
             {/* Score Badge */}
             <span style={{
@@ -102,12 +104,12 @@ export default function HistoryList({ history, onSelectTrack }) {
               color: getScoreColor(track.vibe_score),
               fontSize: '0.8rem',
               fontWeight: '800',
-              padding: '0.2rem 0.6rem',
+              padding: '0.2rem 0.5rem',
               borderRadius: '6px',
-              minWidth: '55px',
+              minWidth: '50px',
               textAlign: 'center'
             }}>
-              {parseFloat(track.vibe_score).toFixed(1)}%
+              {parseFloat(track.vibe_score).toFixed(0)}%
             </span>
           </div>
         </div>
@@ -116,7 +118,7 @@ export default function HistoryList({ history, onSelectTrack }) {
         .history-item:hover {
           background: rgba(255, 255, 255, 0.05) !important;
           border-color: rgba(255, 255, 255, 0.1) !important;
-          transform: translateX(4px);
+          transform: translateY(-2px);
         }
       `}</style>
     </div>

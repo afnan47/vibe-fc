@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 
 export default function VibeGauge({ score }) {
   const [offset, setOffset] = useState(0);
-  const size = 190;
-  const strokeWidth = 12;
-  const radius = (size - strokeWidth - 16) / 2; // leaves space for HUD ring
+  const size = 230;
+  const strokeWidth = 14;
+  const radius = (size - strokeWidth - 18) / 2; // leaves space for HUD ring
   const circumference = radius * 2 * Math.PI;
 
   useEffect(() => {
@@ -171,7 +171,7 @@ export default function VibeGauge({ score }) {
           zIndex: 2
         }}>
           <span style={{
-            fontSize: '3.3rem',
+            fontSize: '4.2rem',
             fontWeight: '900',
             fontFamily: "'Barlow Condensed', sans-serif",
             lineHeight: 0.95,
@@ -182,7 +182,7 @@ export default function VibeGauge({ score }) {
             {score.toFixed(1)}%
           </span>
           <span style={{
-            fontSize: '0.7rem',
+            fontSize: '0.85rem',
             fontFamily: "'Barlow Condensed', sans-serif",
             fontWeight: '800',
             textTransform: 'uppercase',
@@ -198,9 +198,9 @@ export default function VibeGauge({ score }) {
       <div style={{
         background: 'rgba(255, 255, 255, 0.02)',
         border: '1px solid rgba(255, 255, 255, 0.06)',
-        padding: '0.8rem 1.25rem',
+        padding: '0.9rem 1.4rem',
         borderRadius: '12px',
-        maxWidth: '280px',
+        maxWidth: '320px',
         boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)',
         backdropFilter: 'blur(10px)'
       }}>
@@ -209,7 +209,7 @@ export default function VibeGauge({ score }) {
           fontFamily: "'Barlow Condensed', sans-serif",
           fontWeight: '900',
           textTransform: 'uppercase',
-          fontSize: '1rem',
+          fontSize: '1.25rem',
           letterSpacing: '1px',
           marginBottom: '3px',
           textShadow: `0 0 8px ${glowColor}`
@@ -218,7 +218,7 @@ export default function VibeGauge({ score }) {
         </h4>
         <p style={{
           color: 'var(--text-secondary)',
-          fontSize: '0.78rem',
+          fontSize: '0.88rem',
           lineHeight: '1.4'
         }}>
           {desc}

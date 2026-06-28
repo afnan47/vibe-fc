@@ -33,9 +33,9 @@ const FEATURE_TOOLTIPS = {
 export default function FeatureChart({ trackFeatures, averageFeatures }) {
   const [tooltip, setTooltip] = useState(null);
 
-  const cx = 150;
-  const cy = 130;
-  const maxRadius = 90;
+  const cx = 180;
+  const cy = 150;
+  const maxRadius = 110;
 
   const normalize = (key, val) => {
     if (val === undefined || val === null) return 0;
@@ -105,7 +105,7 @@ export default function FeatureChart({ trackFeatures, averageFeatures }) {
         Vibe Attribute Breakdown
       </h3>
 
-      <div style={{ position: 'relative', width: '300px', height: '260px' }}>
+      <div style={{ position: 'relative', width: '360px', height: '300px' }}>
         {tooltip && (
           <div style={{
             position: 'absolute',
@@ -130,7 +130,7 @@ export default function FeatureChart({ trackFeatures, averageFeatures }) {
           </div>
         )}
 
-        <svg width="300" height="260" style={{ overflow: 'visible' }}>
+        <svg width="360" height="300" style={{ overflow: 'visible' }}>
           {FEATURE_KEYS.map((_, idx) => {
             const outerPoint = getCoordinates(idx, 100);
             return <line key={`axis-${idx}`} x1={cx} y1={cy} x2={outerPoint.x} y2={outerPoint.y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />;
@@ -162,7 +162,7 @@ export default function FeatureChart({ trackFeatures, averageFeatures }) {
           {FEATURE_LABELS.map((label, idx) => {
             const pos = labelPositions[idx];
             return (
-              <text key={`label-${idx}`} x={pos.x} y={pos.y + 4} fill="var(--text-secondary)" fontSize="10" fontWeight="700" textAnchor={pos.textAnchor} style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <text key={`label-${idx}`} x={pos.x} y={pos.y + 4} fill="var(--text-secondary)" fontSize="11" fontWeight="700" textAnchor={pos.textAnchor} style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {label}
               </text>
             );

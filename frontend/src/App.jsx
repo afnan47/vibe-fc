@@ -160,423 +160,437 @@ export default function App() {
     <div className="container">
       {/* Header Banner */}
       <header style={{
-        textAlign: 'center',
-        marginBottom: '2.5rem',
-        marginTop: '1rem'
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '2rem',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        paddingBottom: '0.6rem',
+        marginBottom: '0.75rem',
+        flexShrink: 0,
       }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          background: 'rgba(203, 249, 0, 0.05)',
-          border: '1.5px solid var(--fc-lime)',
-          padding: '0.4rem 1rem',
-          borderRadius: '20px',
-          color: 'var(--fc-lime)',
-          fontSize: '0.8rem',
-          fontWeight: '800',
-          textTransform: 'uppercase',
-          letterSpacing: '2px',
-          marginBottom: '1rem'
-        }} className="ea-slant-panel">
-          ⚽ Vibe Scout Pipeline
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'rgba(229, 193, 88, 0.05)',
+            border: '1.5px solid var(--fc-lime)',
+            padding: '0.3rem 0.75rem',
+            borderRadius: '20px',
+            color: 'var(--fc-lime)',
+            fontSize: '0.7rem',
+            fontWeight: '800',
+            textTransform: 'uppercase',
+            letterSpacing: '2px'
+          }} className="ea-slant-panel">
+            ⚽ Vibe Scout
+          </div>
+          <div>
+            <h1 style={{
+              fontSize: '2.4rem',
+              fontWeight: '900',
+              fontStyle: 'italic',
+              fontFamily: "'Barlow Condensed', sans-serif",
+              lineHeight: '1.0',
+              letterSpacing: '-0.5px',
+              textTransform: 'uppercase',
+              background: 'linear-gradient(to right, #ffffff, #e5c158)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              margin: 0
+            }}>
+              FUT VIBE <span style={{ color: 'var(--fc-lime)', WebkitTextFillColor: 'var(--fc-lime)' }}>FC</span>
+            </h1>
+          </div>
         </div>
-        <h1 style={{
-          fontSize: '4rem',
-          fontWeight: '900',
-          fontStyle: 'italic',
-          fontFamily: "'Barlow Condensed', sans-serif",
-          lineHeight: '1.0',
-          letterSpacing: '-1px',
-          textTransform: 'uppercase',
-          background: 'linear-gradient(to right, #ffffff, #94a3b8)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          marginBottom: '0.5rem'
-        }}>
-          FUT VIBE <span style={{ color: 'var(--fc-lime)', WebkitTextFillColor: 'var(--fc-lime)' }}>FC</span>
-        </h1>
-        <p style={{
-          color: 'var(--text-secondary)',
-          fontSize: '1rem',
-          maxWidth: '550px',
-          margin: '0 auto'
-        }}>
-          Evaluate if a song belongs on the official FIFA / EA FC soundtrack using our custom 
-          <strong> One-Class Support Vector Machine (OC-SVM)</strong> trained on 1,400+ historical FUT tracks.
-        </p>
+
+        {/* Inline Search Bar */}
+        <div style={{ flex: 1, maxWidth: '500px' }}>
+          <SearchBar onSearch={handleSearch} isLoading={isLoading} value={trackInput} onChange={setTrackInput} />
+        </div>
       </header>
 
-      {/* Two-Column Layout: Vibe Checker (left) + Scouter (right) */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 320px',
-        gap: '1.5rem',
-        alignItems: 'start'
-      }}>
-        {/* Left Column — Vibe Checker */}
-        <div style={{ minWidth: 0 }}>
-          {/* Main Search Panel */}
-          <section style={{ marginBottom: '2.5rem' }}>
-            <SearchBar onSearch={handleSearch} isLoading={isLoading} value={trackInput} onChange={setTrackInput} />
-            {error && (
-              <div style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
-                color: '#f87171',
-                padding: '0.75rem 1.25rem',
-                borderRadius: '8px',
-                maxWidth: '700px',
-                margin: '1rem auto 0',
-                fontSize: '0.85rem',
-                textAlign: 'center'
-              }}>
-                Warning: {error}
-              </div>
-            )}
-          </section>
+      {/* Main Grid: Left Column Dashboard + Right Column Scouter */}
+      <div className="main-app-grid">
+        {/* Left Column — Dashboard Panel */}
+        <div style={{ 
+          minWidth: 0, 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'space-between', 
+          gap: '0.75rem' 
+        }}>
+          {error && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              color: '#f87171',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              textAlign: 'center',
+              flexShrink: 0
+            }}>
+              Warning: {error}
+            </div>
+          )}
 
-          {/* Results / Dashboard Grid */}
+          {/* Results / Center Area */}
           <div style={{
+            flex: 1,
+            minHeight: 0,
             display: 'grid',
-            gridTemplateColumns: (isLoading || selectedTrack) ? '1.2fr 2fr' : '1fr',
-            gap: '2rem',
-            alignItems: 'start'
+            gridTemplateColumns: (isLoading || selectedTrack) ? 'auto 1fr' : '1fr',
+            gap: '1.5rem',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
           }}>
             {isLoading ? (
-          <>
-            {/* Left Column: Pulse Skeleton Card */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '1rem'
-            }}>
-              <h2 style={{
-                fontSize: '1rem',
-                fontWeight: '800',
-                textTransform: 'uppercase',
-                letterSpacing: '1.5px',
-                color: 'var(--fc-lime)',
-                textShadow: '0 0 10px var(--fc-lime-glow)'
-              }}>
-                Scouting Song Pack...
-              </h2>
-              <div className="fut-card-wrapper">
-                <div className="fut-card-border-glow" style={{ animation: 'borderGlowPulse 1.5s infinite ease-in-out' }}>
-                  <div className="fut-skeleton">
-                    {/* Top-left: rating + position block */}
-                    <div className="skel-rating-block">
-                      <div className="skel-chip skel-chip--lg"></div>
-                      <div className="skel-chip skel-chip--sm"></div>
-                      {/* Playstyle badge on left edge */}
-                      <div className="skel-playstyle"></div>
-                    </div>
-
-                    {/* Photo area */}
-                    <div className="skel-photo"></div>
-
-                    {/* Divider */}
-                    <div className="skel-divider"></div>
-
-                    {/* Song name + artist */}
-                    <div className="skel-chip skel-chip--name"></div>
-                    <div className="skel-chip skel-chip--artist"></div>
-
-                    {/* 6-stat row */}
-                    <div className="skel-stats-row">
-                      {[0,1,2,3,4,5].map(i => (
-                        <div key={i} className="skel-stat-col">
-                          <div className="skel-chip skel-chip--stat-label"></div>
-                          <div className="skel-chip skel-chip--stat-val"></div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Bottom: 3 badge circles (flag / league / club) */}
-                    <div className="skel-badges-row">
-                      <div className="skel-badge-circle"></div>
-                      <div className="skel-badge-circle"></div>
-                      <div className="skel-badge-circle"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Pulse Skeleton Dashboard */}
-            <div className="glass-card" style={{
-              minHeight: '430px',
-              padding: '2.5rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '2.5rem'
-            }}>
-              <div className="skeleton-circle" style={{ width: '160px', height: '160px' }}></div>
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="skeleton-text" style={{ width: '90%' }}></div>
-                <div className="skeleton-text" style={{ width: '75%' }}></div>
-                <div className="skeleton-text" style={{ width: '85%' }}></div>
-              </div>
-            </div>
-          </>
-        ) : selectedTrack ? (
-          <>
-            {/* Left Column: FUT Player-Style Song Card */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '1rem'
-            }}>
-              <h2 style={{
-                fontSize: '1rem',
-                fontWeight: '800',
-                textTransform: 'uppercase',
-                letterSpacing: '1.5px',
-                color: 'var(--text-secondary)'
-              }}>
-                Scout Report Card
-              </h2>
-              
-              <div 
-                className="fut-card-wrapper"
-                onMouseMove={(e) => {
-                  const card = e.currentTarget.querySelector('.fut-card-border-glow');
-                  if (!card) return;
-                  const rect = card.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const y = e.clientY - rect.top;
-                  const midX = rect.width / 2;
-                  const midY = rect.height / 2;
-                  const rotX = -((y - midY) / midY) * 15; // Max 15deg tilt
-                  const rotY = ((x - midX) / midX) * 15;
-                  
-                  card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.03)`;
-                  card.style.setProperty('--sheen-x', `${(x / rect.width) * 100 - 50}%`);
-                  card.style.setProperty('--sheen-y', `${(y / rect.height) * 100 - 50}%`);
-                }}
-                onMouseLeave={(e) => {
-                  const card = e.currentTarget.querySelector('.fut-card-border-glow');
-                  if (!card) return;
-                  card.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1)';
-                  card.style.setProperty('--sheen-x', '0%');
-                  card.style.setProperty('--sheen-y', '0%');
-                }}
-              >
-                {/* Key on outer wrapper resets the entire card stack on track change */}
-                <div className="vibe-active-glow" key={selectedTrack.id}>
-                  <div className="fut-card-border-glow reveal-anim">
-                    <div className={`fut-card ${getCardClass(selectedTrack.vibe_score)}`}>
-                      {/* Rating badge */}
-                      <div className="badge-rating">
-                        <span className="rating-val">{Math.round(selectedTrack.vibe_score)}</span>
-                        <span className="position-val">VIB</span>
-                      </div>
-
-                      {/* Cover art area — clean, no overlay */}
-                      <div 
-                        className={`card-art ${isPlaying ? 'playing' : ''}`}
-                        style={{
-                          backgroundImage: selectedTrack?.cover_art_url ? `url(${selectedTrack.cover_art_url})` : 'none',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          position: 'relative'
-                        }}
-                      >
-                        {!selectedTrack?.cover_art_url && <span>🎵</span>}
-                      </div>
-                      
-                      {/* Horizontal divider line like player card */}
-                      <div style={{
-                        width: '80%',
-                        height: '1.5px',
-                        background: 'rgba(255, 255, 255, 0.18)',
-                        margin: '0.25rem 0 0.5rem 0'
-                      }}></div>
-
-                      {/* Title & Artist */}
-                      <div className="song-name">
-                        {selectedTrack?.title}
-                      </div>
-                      <div className="artist-name">
-                        {selectedTrack?.artist}
-                      </div>
-                      
-                      {/* FUT 6-stat breakdown */}
-                      <div className="stats-grid">
-                        <div className="stat-item">
-                          <span className="stat-label">DNC</span>
-                          <span className="stat-val">{Math.round(selectedTrack.danceability)}</span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">ENG</span>
-                          <span className="stat-val">{Math.round(selectedTrack.energy)}</span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">VAL</span>
-                          <span className="stat-val">{Math.round(selectedTrack.valence)}</span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">TEM</span>
-                          <span className="stat-val">{Math.round(selectedTrack.tempo)}</span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">ACO</span>
-                          <span className="stat-val">{Math.round(selectedTrack.acousticness)}</span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">LOU</span>
-                          <span className="stat-val">{Math.round(selectedTrack.loudness)}</span>
-                        </div>
-                      </div>
-
-
-
-                      {/* Bottom badge row: Spotify logo only */}
-                      <div className="badges-row">
-                        <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '15px', height: '15px', opacity: 0.75 }}>
-                          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.377-1.454-5.37-1.783-8.894-.982-.336.075-.668-.135-.744-.47-.077-.336.135-.668.47-.743 3.856-.88 7.15-.506 9.822 1.13.294.178.385.56.203.858zm1.224-2.723c-.226.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.076-1.183-.412.125-.845-.107-.97-.52-.125-.413.107-.847.52-.97 3.666-1.11 8.24-.57 11.34 1.34.368.226.488.708.26 1.073zm.106-2.833C14.385 8.81 8.566 8.62 5.176 9.648a1.008 1.008 0 0 1-1.224-.714c-.156-.514.137-1.06.65-1.217 3.882-1.18 10.312-.96 14.373 1.452.46.273.612.87.34 1.33-.273.46-.87.61-1.33.34z"/>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* TOTS/Elite badge — inside the left column so it doesn't become a grid item */}
-            </div>
-
-            {/* Right Column: Dashboard Panel */}
-            <div className="glass-card" style={{
-              minHeight: '430px',
-              padding: '2.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '2rem'
-            }}>
-              {/* Standard Dashboard details (Radar + Gauge) */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1.1fr',
-                gap: '2rem',
-                alignItems: 'center',
-                width: '100%'
-              }}>
-                <VibeGauge score={selectedTrack.vibe_score} />
-                
-                {datasetStats && (
-                  <FeatureChart 
-                    trackFeatures={selectedTrack} 
-                    averageFeatures={datasetStats.averages} 
-                  />
-                )}
-              </div>
-            </div>
-          </>
-        ) : (
-          /* Empty State: Prompt user or show instructions */
-          <div className="glass-card" style={{
-            textAlign: 'center',
-            padding: '3rem 2rem',
-            color: 'var(--text-secondary)',
-            maxWidth: '750px',
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '1rem'
-          }}>
-            <div style={{
-              fontSize: '3rem',
-              opacity: 0.85
-            }}>
-              🎮
-            </div>
-            <h3 style={{ fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              Scout A Track
-            </h3>
-            <p style={{ fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
-              Paste a Spotify link to run a mock scout check. The pipeline will fetch the track's audio features from the Supabase cache, local FUT database, or ReccoBeats API, and pass it through the calibrated One-Class SVM model.
-            </p>
-
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.5rem',
-              width: '100%',
-              maxWidth: '450px',
-              marginTop: '1rem',
-              borderTop: '1px solid rgba(255,255,255,0.05)',
-              paddingTop: '1.5rem'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)' }}>
-                  Try one of these FUT Golden standards:
-                </span>
-                <button 
-                  onClick={fetchPresets}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--fc-lime)',
-                    cursor: 'pointer',
-                    fontSize: '0.75rem',
+              <>
+                {/* Left Column: Pulse Skeleton Card */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.75rem',
+                  flexShrink: 0
+                }}>
+                  <h2 style={{
+                    fontSize: '0.85rem',
                     fontWeight: '800',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1.5px',
+                    color: 'var(--fc-lime)',
+                    textShadow: '0 0 10px var(--fc-lime-glow)'
+                  }}>
+                    Scouting Song Pack...
+                  </h2>
+                  <div className="fut-card-wrapper">
+                    <div className="fut-card-border-glow" style={{ animation: 'borderGlowPulse 1.5s infinite ease-in-out' }}>
+                      <div className="fut-skeleton">
+                        {/* Top-left: rating + position block */}
+                        <div className="skel-rating-block">
+                          <div className="skel-chip skel-chip--lg"></div>
+                          <div className="skel-chip skel-chip--sm"></div>
+                          {/* Playstyle badge on left edge */}
+                          <div className="skel-playstyle"></div>
+                        </div>
+
+                        {/* Photo area */}
+                        <div className="skel-photo"></div>
+
+                        {/* Divider */}
+                        <div className="skel-divider"></div>
+
+                        {/* Song name + artist */}
+                        <div className="skel-chip skel-chip--name"></div>
+                        <div className="skel-chip skel-chip--artist"></div>
+
+                        {/* 6-stat row */}
+                        <div className="skel-stats-row">
+                          {[0,1,2,3,4,5].map(i => (
+                            <div key={i} className="skel-stat-col">
+                              <div className="skel-chip skel-chip--stat-label"></div>
+                              <div className="skel-chip skel-chip--stat-val"></div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Bottom: 3 badge circles (flag / league / club) */}
+                        <div className="skel-badges-row">
+                          <div className="skel-badge-circle"></div>
+                          <div className="skel-badge-circle"></div>
+                          <div className="skel-badge-circle"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Pulse Skeleton Dashboard */}
+                <div className="glass-card" style={{
+                  height: '100%',
+                  padding: '2rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '2rem',
+                  margin: 0,
+                  boxSizing: 'border-box'
+                }}>
+                  <div className="skeleton-circle" style={{ width: '160px', height: '160px' }}></div>
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="skeleton-text" style={{ width: '90%' }}></div>
+                    <div className="skeleton-text" style={{ width: '75%' }}></div>
+                    <div className="skeleton-text" style={{ width: '85%' }}></div>
+                  </div>
+                </div>
+              </>
+            ) : selectedTrack ? (
+              <>
+                {/* Left Column: FUT Player-Style Song Card */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.75rem',
+                  flexShrink: 0
+                }}>
+                  <h2 style={{
+                    fontSize: '0.85rem',
+                    fontWeight: '800',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1.5px',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    Scout Report Card
+                  </h2>
+                  
+                  <div 
+                    className="fut-card-wrapper"
+                    onMouseMove={(e) => {
+                      const card = e.currentTarget.querySelector('.fut-card-border-glow');
+                      if (!card) return;
+                      const rect = card.getBoundingClientRect();
+                      const x = e.clientX - rect.left;
+                      const y = e.clientY - rect.top;
+                      const midX = rect.width / 2;
+                      const midY = rect.height / 2;
+                      const rotX = -((y - midY) / midY) * 15; // Max 15deg tilt
+                      const rotY = ((x - midX) / midX) * 15;
+                      
+                      card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.03)`;
+                      card.style.setProperty('--sheen-x', `${(x / rect.width) * 100 - 50}%`);
+                      card.style.setProperty('--sheen-y', `${(y / rect.height) * 100 - 50}%`);
+                    }}
+                    onMouseLeave={(e) => {
+                      const card = e.currentTarget.querySelector('.fut-card-border-glow');
+                      if (!card) return;
+                      card.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1)';
+                      card.style.setProperty('--sheen-x', '0%');
+                      card.style.setProperty('--sheen-y', '0%');
+                    }}
+                  >
+                    {/* Key on outer wrapper resets the entire card stack on track change */}
+                    <div className="vibe-active-glow" key={selectedTrack.id}>
+                      <div className="fut-card-border-glow reveal-anim">
+                        <div className={`fut-card ${getCardClass(selectedTrack.vibe_score)}`}>
+                          {/* Rating badge */}
+                          <div className="badge-rating">
+                            <span className="rating-val">{Math.round(selectedTrack.vibe_score)}</span>
+                            <span className="position-val">VIB</span>
+                          </div>
+
+                          {/* Cover art area — clean, no overlay */}
+                          <div 
+                            className={`card-art ${isPlaying ? 'playing' : ''}`}
+                            style={{
+                              backgroundImage: selectedTrack?.cover_art_url ? `url(${selectedTrack.cover_art_url})` : 'none',
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              position: 'relative'
+                            }}
+                          >
+                            {!selectedTrack?.cover_art_url && <span>🎵</span>}
+                          </div>
+                          
+                          {/* Horizontal divider line like player card */}
+                          <div style={{
+                            width: '80%',
+                            height: '1.5px',
+                            background: 'rgba(255, 255, 255, 0.18)',
+                            margin: '0.25rem 0 0.5rem 0'
+                          }}></div>
+
+                          {/* Title & Artist */}
+                          <div className="song-name">
+                            {selectedTrack?.title}
+                          </div>
+                          <div className="artist-name">
+                            {selectedTrack?.artist}
+                          </div>
+                          
+                          {/* FUT 6-stat breakdown */}
+                          <div className="stats-grid">
+                            <div className="stat-item">
+                              <span className="stat-label">DNC</span>
+                              <span className="stat-val">{Math.round(selectedTrack.danceability)}</span>
+                            </div>
+                            <div className="stat-item">
+                              <span className="stat-label">ENG</span>
+                              <span className="stat-val">{Math.round(selectedTrack.energy)}</span>
+                            </div>
+                            <div className="stat-item">
+                              <span className="stat-label">VAL</span>
+                              <span className="stat-val">{Math.round(selectedTrack.valence)}</span>
+                            </div>
+                            <div className="stat-item">
+                              <span className="stat-label">TEM</span>
+                              <span className="stat-val">{Math.round(selectedTrack.tempo)}</span>
+                            </div>
+                            <div className="stat-item">
+                              <span className="stat-label">ACO</span>
+                              <span className="stat-val">{Math.round(selectedTrack.acousticness)}</span>
+                            </div>
+                            <div className="stat-item">
+                              <span className="stat-label">LOU</span>
+                              <span className="stat-val">{Math.round(selectedTrack.loudness)}</span>
+                            </div>
+                          </div>
+
+                          {/* Bottom badge row: Spotify logo only */}
+                          <div className="badges-row">
+                            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '15px', height: '15px', opacity: 0.75 }}>
+                              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.377-1.454-5.37-1.783-8.894-.982-.336.075-.668-.135-.744-.47-.077-.336.135-.668.47-.743 3.856-.88 7.15-.506 9.822 1.13.294.178.385.56.203.858zm1.224-2.723c-.226.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.076-1.183-.412.125-.845-.107-.97-.52-.125-.413.107-.847.52-.97 3.666-1.11 8.24-.57 11.34 1.34.368.226.488.708.26 1.073zm.106-2.833C14.385 8.81 8.566 8.62 5.176 9.648a1.008 1.008 0 0 1-1.224-.714c-.156-.514.137-1.06.65-1.217 3.882-1.18 10.312-.96 14.373 1.452.46.273.612.87.34 1.33-.273.46-.87.61-1.33.34z"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Dashboard Panel */}
+                <div className="glass-card" style={{
+                  height: '100%',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  margin: 0,
+                  boxSizing: 'border-box'
+                }}>
+                  {/* Standard Dashboard details (Radar + Gauge) */}
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  🔄 Shuffle
-                </button>
-              </div>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '0.5rem'
+                    justifyContent: 'center',
+                    gap: '2.5rem',
+                    width: '100%'
+                  }}>
+                    <VibeGauge score={selectedTrack.vibe_score} />
+                    
+                    {datasetStats && (
+                      <FeatureChart 
+                        trackFeatures={selectedTrack} 
+                        averageFeatures={datasetStats.averages} 
+                      />
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Empty State: Prompt user or show instructions */
+              <div className="glass-card" style={{
+                textAlign: 'center',
+                padding: '2.5rem 2rem',
+                color: 'var(--text-secondary)',
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '0.75rem',
+                margin: 0,
+                boxSizing: 'border-box'
               }}>
-                {presets.map(ex => (
-                  <button
-                    key={ex.id}
-                    onClick={() => handleSearch(ex.id)}
-                    style={{
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      borderRadius: '8px',
-                      padding: '0.5rem',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontSize: '0.8rem',
-                      transition: 'all 0.2s ease'
-                    }}
-                    className="ex-btn"
-                  >
-                    <div style={{ fontWeight: '700', color: '#fff' }}>{ex.name}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{ex.artist} ({ex.desc})</div>
-                  </button>
-                ))}
+                <div style={{
+                  fontSize: '2.8rem',
+                  opacity: 0.85
+                }}>
+                  🎮
+                </div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
+                  Scout A Track
+                </h3>
+                <p style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-secondary)', maxWidth: '600px', margin: 0 }}>
+                  Paste a Spotify link or search for a song to run a vibe check. Our pipeline uses a 
+                  <strong> One-Class SVM</strong> trained on 1,400+ FUT tracks to predict if it belongs on the soundtrack.
+                </p>
+
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  width: '100%',
+                  maxWidth: '550px',
+                  marginTop: '0.75rem',
+                  borderTop: '1px solid rgba(255,255,255,0.05)',
+                  paddingTop: '1rem'
+                }}>
+                  <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)' }}>
+                      Try one of these FUT Golden standards:
+                    </span>
+                    <button 
+                      onClick={fetchPresets}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--fc-lime)',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        fontWeight: '800',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      🔄 Shuffle
+                    </button>
+                  </div>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '0.5rem'
+                  }}>
+                    {presets.map(ex => (
+                      <button
+                        key={ex.id}
+                        onClick={() => handleSearch(ex.id)}
+                        style={{
+                          background: 'rgba(255,255,255,0.02)',
+                          border: '1px solid rgba(255,255,255,0.05)',
+                          borderRadius: '8px',
+                          padding: '0.5rem',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          fontSize: '0.8rem',
+                          transition: 'all 0.2s ease'
+                        }}
+                        className="ex-btn"
+                      >
+                        <div style={{ fontWeight: '700', color: '#fff' }}>{ex.name}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{ex.artist} ({ex.desc})</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
-      </div>
 
           {/* Bottom Row: History Panel */}
           <section className="glass-card ea-slant-top" style={{
-            marginTop: '2.5rem',
+            padding: '0.6rem 1.25rem',
+            flexShrink: 0,
+            overflow: 'hidden'
           }}>
             <h3 style={{
-              fontSize: '1rem',
+              fontSize: '0.85rem',
               fontWeight: '800',
               textTransform: 'uppercase',
               letterSpacing: '1px',
               color: 'var(--text-primary)',
-              marginBottom: '1rem',
+              marginBottom: '0.5rem',
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem'
@@ -589,8 +603,8 @@ export default function App() {
 
         {/* Right Column — Daily Scouter */}
         <div style={{
-          position: 'sticky',
-          top: '1.5rem',
+          height: '100%',
+          minHeight: 0
         }}>
           <ScouterPlaylist onSelectTrack={handleSearch} />
         </div>
