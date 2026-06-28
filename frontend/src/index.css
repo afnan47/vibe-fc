@@ -41,6 +41,12 @@
   --fut-bronze-grad: linear-gradient(135deg, #e2906d 0%, #a8705c 50%, #6b3e2e 100%);
   --fut-vibe-grad: linear-gradient(135deg, #ffe680 0%, #e5c158 100%);
   --card-border: 1px solid rgba(212, 175, 55, 0.12);
+
+  /* Consistent transition tokens */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-smooth: 0.3s ease;
+  --transition-bounce: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -199,7 +205,7 @@ h1, h2, h3, .sports-font {
   border-radius: 16px;
   padding: 1.5rem;
   box-shadow: var(--card-shadow);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--transition-bounce);
 }
 
 .glass-card:hover {
@@ -219,7 +225,7 @@ h1, h2, h3, .sports-font {
   padding: 2.5px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.03) 100%);
   clip-path: polygon(0% 12%, 8% 12%, 11% 9%, 17% 8%, 23% 4%, 35% 1%, 50% 0%, 65% 1%, 77% 4%, 83% 8%, 89% 9%, 92% 12%, 100% 12%, 100% 82%, 50% 100%, 0% 82%);
-  transition: transform 0.12s ease-out, background 0.3s ease, filter 0.3s ease;
+  transition: transform 0.12s ease-out, background var(--transition-smooth), filter var(--transition-smooth);
   transform-style: preserve-3d;
   will-change: transform;
   filter: drop-shadow(0 15px 30px rgba(0,0,0,0.5));
@@ -407,12 +413,20 @@ h1, h2, h3, .sports-font {
   color: #ffd700;
   text-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 140, 0, 0.5);
 }
-.fut-card.tots .song-name,
-.fut-card.tots .artist-name,
-.fut-card.tots .stat-val,
+.fut-card.tots .song-name {
+  color: #fff;
+}
+
+.fut-card.tots .artist-name {
+  color: #e2c88a;
+}
+
+.fut-card.tots .stat-val {
+  color: #fff;
+}
+
 .fut-card.tots .stat-label {
-  color: #ffd700 !important;
-  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+  color: #fff;
 }
 @keyframes totsSheen {
   0% { transform: translateX(-100%) skewX(-15deg); }
@@ -762,7 +776,7 @@ h1, h2, h3, .sports-font {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all var(--transition-base);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -791,7 +805,7 @@ h1, h2, h3, .sports-font {
   font-family: inherit;
   font-size: 1.05rem;
   outline: none;
-  transition: all 0.2s ease;
+  transition: all var(--transition-base);
 }
 
 .input-field:focus {
@@ -863,7 +877,7 @@ h1, h2, h3, .sports-font {
   font-weight: 700;
   letter-spacing: 0.08em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-base);
   outline: none;
   backdrop-filter: blur(4px);
 }
@@ -929,7 +943,7 @@ h1, h2, h3, .sports-font {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   backdrop-filter: blur(6px);
-  transition: border-color 0.2s ease;
+  transition: border-color var(--transition-base);
 }
 
 .preview-control-row:has(.preview-play-btn.is-playing) {
@@ -976,7 +990,7 @@ h1, h2, h3, .sports-font {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-base);
   outline: none;
 }
 
@@ -1035,7 +1049,7 @@ h1, h2, h3, .sports-font {
 /* Pedestal Player Dock beneath FUT Card */
 .player-dock {
   width: 300px;
-  transition: width 0.15s ease-out;
+  transition: width var(--transition-fast);
 }
 @media (min-height: 850px) {
   .player-dock {
@@ -1174,7 +1188,7 @@ h1, h2, h3, .sports-font {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    transition: all 0.2s ease;
+    transition: all var(--transition-base);
     gap: 2px;
     outline: none;
   }
@@ -1192,6 +1206,98 @@ h1, h2, h3, .sports-font {
   
   .bottom-nav-item.active svg {
     transform: scale(1.1);
+  }
+}
+
+/* ── MiniPlayer (Mobile Persistent Bottom Bar) ────────────────────────────── */
+.mini-player {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mini-player {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    height: 56px;
+    padding: 0.5rem 0.75rem;
+    background: rgba(10, 12, 18, 0.97);
+    border-top: 1px solid rgba(212, 175, 55, 0.12);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    cursor: pointer;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    animation: miniPlayerIn 0.25s ease-out;
+  }
+
+  .mini-player-art {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .mini-player-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .mini-player-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .mini-player-artist {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mini-player-play-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--fc-lime);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all var(--transition-fast);
+  }
+
+  .mini-player-play-btn:active {
+    transform: scale(0.92);
+    background: var(--fc-lime);
+    color: #12141c;
+  }
+}
+
+@keyframes miniPlayerIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 
@@ -1251,4 +1357,15 @@ h1, h2, h3, .sports-font {
 .ex-btn:hover {
   background: rgba(203, 249, 0, 0.08) !important;
   border-color: var(--fc-lime) !important;
+}
+
+/* ── Accessibility: Reduce Motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SearchBar from './components/SearchBar';
 import HistoryList from './components/HistoryList';
 import ScouterPlaylist from './components/ScouterPlaylist';
+import MiniPlayer from './components/MiniPlayer';
 
 // Host setup: FastAPI backend runs on localhost:8000
 const API_BASE = 'http://127.0.0.1:8000';
@@ -758,7 +759,7 @@ export default function App() {
                 </div>
               </div>
             ) : (
-              /* Empty State: Prompt user or show instructions */
+              /* Empty State: Minimalist hero */
               <div className="glass-card" style={{
                 textAlign: 'center',
                 padding: '2.5rem 2rem',
@@ -769,22 +770,19 @@ export default function App() {
                 flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
-                gap: '0.75rem',
+                gap: '1rem',
                 margin: 0,
                 boxSizing: 'border-box'
               }}>
-                <div style={{
-                  fontSize: '2.8rem',
-                  opacity: 0.85
-                }}>
-                  🎮
-                </div>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
+                <svg viewBox="0 0 64 64" fill="none" style={{ width: '48px', height: '48px', opacity: 0.5 }}>
+                  <circle cx="26" cy="26" r="18" stroke="var(--fc-lime)" strokeWidth="3"/>
+                  <line x1="38" y1="38" x2="54" y2="54" stroke="var(--fc-lime)" strokeWidth="3" strokeLinecap="round"/>
+                </svg>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#fff', textTransform: 'uppercase', letterSpacing: '1.5px', margin: 0 }}>
                   Scout A Track
                 </h3>
-                <p style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-secondary)', maxWidth: '600px', margin: 0 }}>
-                  Paste a Spotify link or search for a song to run a vibe check. Our pipeline uses a 
-                  <strong> One-Class SVM</strong> trained on 1,400+ FUT tracks to predict if it belongs on the soundtrack.
+                <p style={{ fontSize: '0.85rem', lineHeight: '1.5', color: 'var(--text-muted)', maxWidth: '420px', margin: '0 0 0.5rem 0' }}>
+                  Paste a Spotify link or search for a song to check its FIFA vibe score.
                 </p>
 
                 <div style={{
@@ -792,14 +790,13 @@ export default function App() {
                   flexDirection: 'column',
                   gap: '0.5rem',
                   width: '100%',
-                  maxWidth: '550px',
-                  marginTop: '0.75rem',
-                  borderTop: '1px solid rgba(255,255,255,0.05)',
-                  paddingTop: '1rem'
+                  maxWidth: '480px',
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  paddingTop: '1.25rem'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)' }}>
-                      Try one of these FUT Golden standards:
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                      Try a classic
                     </span>
                     <button 
                       onClick={fetchPresets}
@@ -808,14 +805,23 @@ export default function App() {
                         border: 'none',
                         color: 'var(--fc-lime)',
                         cursor: 'pointer',
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         fontWeight: '800',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px'
+                        gap: '4px',
+                        opacity: 0.7,
+                        transition: 'opacity 0.2s ease'
                       }}
+                      onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                      onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
                     >
-                      🔄 Shuffle
+                      <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: '14px', height: '14px' }}>
+                        <path d="M14.66 10.5a5 5 0 1 1-4.66-6.5V2a7 7 0 1 0 7 7h-2.34z"/>
+                      </svg>
+                      Shuffle
                     </button>
                   </div>
                   <div style={{
@@ -829,9 +835,9 @@ export default function App() {
                         onClick={() => handleSearch(ex.id, false)}
                         style={{
                           background: 'rgba(255,255,255,0.02)',
-                          border: '1px solid rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.06)',
                           borderRadius: '8px',
-                          padding: '0.5rem',
+                          padding: '0.6rem 0.65rem',
                           cursor: 'pointer',
                           textAlign: 'left',
                           fontSize: '0.8rem',
@@ -839,8 +845,8 @@ export default function App() {
                         }}
                         className="ex-btn"
                       >
-                        <div style={{ fontWeight: '700', color: '#fff' }}>{ex.name}</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{ex.artist} ({ex.desc})</div>
+                        <div style={{ fontWeight: '700', color: '#fff', fontSize: '0.82rem' }}>{ex.name}</div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '1px' }}>{ex.artist}</div>
                       </button>
                     ))}
                   </div>
@@ -858,6 +864,14 @@ export default function App() {
           <ScouterPlaylist onSelectTrack={(val) => handleSearch(val, false)} />
         </div>
       </div>
+
+      {/* MiniPlayer: Persistent mobile bottom bar */}
+      <MiniPlayer
+        selectedTrack={selectedTrack}
+        isPlaying={isPlaying}
+        togglePlay={togglePlay}
+        onNavigateToShowcase={() => setActiveTab('showcase')}
+      />
 
       {/* Bottom Navigation Bar for Mobile */}
       <nav className="bottom-nav">

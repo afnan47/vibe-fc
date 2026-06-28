@@ -86,7 +86,7 @@ export default function SearchBar({ onSearch, isLoading, value, onChange }) {
           <input
             type="text"
             className="input-field"
-            placeholder="Paste Spotify link..."
+            placeholder="Paste your Spotify track link"
             value={value}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
