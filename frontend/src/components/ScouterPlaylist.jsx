@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, memo } from 'react';
 
 const API_BASE = 'http://127.0.0.1:8000';
 
@@ -9,7 +9,7 @@ const PLATFORM_META = {
   fut_classic: { label: 'FUT', color: '#cbf900', icon: 'F', title: 'FUT Classic' },
 };
 
-export default function ScouterPlaylist({ onSelectTrack }) {
+const ScouterPlaylist = memo(function ScouterPlaylist({ onSelectTrack }) {
   const [playlist, setPlaylist] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +37,7 @@ export default function ScouterPlaylist({ onSelectTrack }) {
   useEffect(() => {
     fetchPlaylist();
     pollingRef.current = setInterval(() => {
-      fetchPlaylist();
+      if (!document.hidden) fetchPlaylist();
     }, 10000);
     return () => {
       if (pollingRef.current) {
@@ -276,7 +276,9 @@ export default function ScouterPlaylist({ onSelectTrack }) {
         .scouter-track-item:active {
           transform: translateX(2px);
         }
-      `}</style>
+      `}      </style>
     </div>
   );
-}
+});
+
+export default ScouterPlaylist;

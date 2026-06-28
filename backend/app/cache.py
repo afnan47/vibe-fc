@@ -1,4 +1,5 @@
 import os
+from collections import OrderedDict
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
@@ -9,6 +10,25 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
 
 _client = None
+
+# In-memory LRU cache for hot track lookups
+_memory_cache = OrderedDict()
+MEMORY_CACHE_MAX = 200
+
+def lookup_memory_cache(track_id: str) -> dict | None:
+    """Fast in-memory LRU lookup — avoids a Supabase network hop for hot tracks."""
+    global _memory_cache
+    if track_id in _memory_cache:
+        _memory_cache.move_to_end(track_id)
+        return _memory_cache[track_id]
+    return None
+
+def save_memory_cache(record: dict) -> None:
+    """Stores a record in the in-memory LRU cache."""
+    global _memory_cache
+    _memory_cache[record['track_id']] = record
+    if len(_memory_cache) > MEMORY_CACHE_MAX:
+        _memory_cache.popitem(last=False)
 
 def get_supabase_client() -> Client:
     """Returns the cached Supabase client or initializes it if config is present."""
@@ -28,7 +48,11 @@ def get_supabase_client() -> Client:
         return None
 
 def lookup_cache(track_id: str) -> dict:
-    """Looks up track features and vibe score in the Supabase cache."""
+    """Looks up track features and vibe score, checking in-memory cache first."""
+    cached = lookup_memory_cache(track_id)
+    if cached:
+        return cached
+
     client = get_supabase_client()
     if not client:
         return None
@@ -37,8 +61,7 @@ def lookup_cache(track_id: str) -> dict:
         res = client.table("track_cache").select("*").eq("track_id", track_id).execute()
         if res.data:
             data = res.data[0]
-            # Convert keys to match our unified dictionary format
-            return {
+            record = {
                 'track_id': data.get('track_id'),
                 'title': data.get('title'),
                 'artist': data.get('artist'),
@@ -53,17 +76,15 @@ def lookup_cache(track_id: str) -> dict:
                 'cover_art_url': data.get('cover_art_url'),
                 'source': 'supabase_cache'
             }
+            save_memory_cache(record)
+            return record
     except Exception as e:
         print(f"Supabase cache lookup error: {e}")
     return None
 
 def save_cache(features: dict, vibe_score: float) -> bool:
-    """Saves track features and calculated vibe score to the Supabase cache."""
-    client = get_supabase_client()
-    if not client:
-        return False
-        
-    payload = {
+    """Saves track features and calculated vibe score to both memory and Supabase cache."""
+    record = {
         'track_id': features['track_id'],
         'title': features['title'],
         'artist': features['artist'],
@@ -75,8 +96,16 @@ def save_cache(features: dict, vibe_score: float) -> bool:
         'loudness': float(features['loudness']),
         'vibe_score': float(vibe_score),
         'preview_url': features.get('preview_url'),
-        'cover_art_url': features.get('cover_art_url')
+        'cover_art_url': features.get('cover_art_url'),
+        'source': 'supabase_cache'
     }
+    save_memory_cache(record)
+    
+    client = get_supabase_client()
+    if not client:
+        return False
+
+    payload = {k: v for k, v in record.items() if k != 'source'}
     
     try:
         # Upsert: insert or update if track_id exists

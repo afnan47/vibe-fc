@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-export default function HistoryList({ history, onSelectTrack, layout = 'horizontal' }) {
+const HistoryList = memo(function HistoryList({ history, onSelectTrack, layout = 'horizontal' }) {
   if (!history || history.length === 0) {
     return (
       <div style={{
@@ -134,4 +134,6 @@ export default function HistoryList({ history, onSelectTrack, layout = 'horizont
       `}</style>
     </div>
   );
-}
+});
+
+export default HistoryList;

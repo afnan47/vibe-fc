@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
+import { useAudioPlayer } from '../lib/useAudioPlayer';
 
-export default function MiniPlayer({ selectedTrack, isPlaying, togglePlay, onNavigateToShowcase }) {
+const MiniPlayer = memo(function MiniPlayer({ selectedTrack, onNavigateToShowcase }) {
+  const { isPlaying, togglePlay } = useAudioPlayer();
+
   if (!selectedTrack) return null;
 
   return (
@@ -16,7 +19,6 @@ export default function MiniPlayer({ selectedTrack, isPlaying, togglePlay, onNav
           backgroundRepeat: 'no-repeat',
         }}
       />
-
       <div className="mini-player-info">
         <div className="mini-player-title">
           {selectedTrack.title}
@@ -25,7 +27,6 @@ export default function MiniPlayer({ selectedTrack, isPlaying, togglePlay, onNav
           {selectedTrack.artist}
         </div>
       </div>
-
       <button
         className="mini-player-play-btn"
         onClick={(e) => {
@@ -47,4 +48,6 @@ export default function MiniPlayer({ selectedTrack, isPlaying, togglePlay, onNav
       </button>
     </div>
   );
-}
+});
+
+export default MiniPlayer;
