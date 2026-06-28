@@ -9,7 +9,7 @@ const PLATFORM_META = {
   fut_classic: { label: 'FUT', color: '#cbf900', icon: 'F', title: 'FUT Classic' },
 };
 
-const ScouterPlaylist = memo(function ScouterPlaylist({ onSelectTrack }) {
+function ScouterPlaylist({ onSelectTrack }) {
   const [playlist, setPlaylist] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -279,6 +279,6 @@ const ScouterPlaylist = memo(function ScouterPlaylist({ onSelectTrack }) {
       `}      </style>
     </div>
   );
-});
+}
 
-export default ScouterPlaylist;
+export default memo(ScouterPlaylist);

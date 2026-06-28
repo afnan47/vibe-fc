@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 const API_BASE = 'http://127.0.0.1:8000';
 const SPOTIFY_RE = /(?:open\.spotify\.com\/track\/|spotify:track:)[a-zA-Z0-9]{22}|^[a-zA-Z0-9]{22}$/;
 
-const SearchBar = memo(function SearchBar({ onSearch, isLoading, value, onChange }) {
+function SearchBar({ onSearch, isLoading, value, onChange }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showDrop, setShowDrop] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
@@ -206,6 +206,6 @@ const SearchBar = memo(function SearchBar({ onSearch, isLoading, value, onChange
       `}</style>
     </form>
   );
-});
+}
 
-export default SearchBar;
+export default memo(SearchBar);
