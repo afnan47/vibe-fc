@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -297,6 +297,62 @@ h1, h2, h3, .sports-font {
   color: rgba(255, 255, 255, 0.65);
 }
 
+/* TOTS / Icon tier: score >= 85 */
+.fut-card.tots {
+  background: linear-gradient(160deg, #1a1200 0%, #3d2800 35%, #1a1200 60%, #2a1800 100%);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+.fut-card.tots::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 215, 0, 0.08) 20%,
+    rgba(255, 140, 0, 0.12) 35%,
+    rgba(255, 215, 0, 0.18) 50%,
+    rgba(255, 140, 0, 0.08) 65%,
+    transparent 80%
+  );
+  animation: totsSheen 2.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+.fut-card.tots::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700, #ff6600, #ffd700);
+  background-size: 300% 300%;
+  animation: totsGlow 3s ease infinite;
+  z-index: -1;
+  border-radius: inherit;
+  filter: blur(4px);
+  opacity: 0.7;
+}
+.fut-card.tots .badge-rating .rating-val {
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 140, 0, 0.5);
+}
+.fut-card.tots .song-name,
+.fut-card.tots .artist-name,
+.fut-card.tots .stat-val,
+.fut-card.tots .stat-label {
+  color: #ffd700 !important;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+@keyframes totsSheen {
+  0% { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
+}
+@keyframes totsGlow {
+  0%, 100% { background-position: 0% 50%; opacity: 0.5; }
+  50% { background-position: 100% 50%; opacity: 0.9; }
+}
+
 .fut-card .badge-rating {
   position: absolute;
   top: 2.2rem;
@@ -313,6 +369,8 @@ h1, h2, h3, .sports-font {
 .fut-card .rating-val {
   font-size: 3rem;
   font-weight: 900;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-style: italic;
 }
 
 .fut-card .position-val {
@@ -411,6 +469,8 @@ h1, h2, h3, .sports-font {
 .fut-card .stat-val {
   font-size: 1.2rem;
   font-weight: 900;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-style: italic;
 }
 
 /* Badges Row at the very bottom */
@@ -428,6 +488,14 @@ h1, h2, h3, .sports-font {
   height: 18px;
   object-fit: contain;
   opacity: 0.9;
+}
+
+/* EA FC geometric angled clip-path utilities */
+.ea-slant-panel {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+}
+.ea-slant-top {
+  clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 12px);
 }
 
 /* Pack Opening Reveal Effect */
@@ -862,3 +930,13 @@ h1, h2, h3, .sports-font {
   from { transform: scaleY(0.3); opacity: 0.5; }
   to   { transform: scaleY(1.0); opacity: 1.0; }
 }
+
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(120%) scale(0.9); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes eqBar1 { from { height: 20%; } to { height: 90%; } }
+@keyframes eqBar2 { from { height: 60%; } to { height: 30%; } }
+@keyframes eqBar3 { from { height: 40%; } to { height: 100%; } }
+@keyframes eqBar4 { from { height: 80%; } to { height: 20%; } }
+@keyframes eqBar5 { from { height: 30%; } to { height: 75%; } }

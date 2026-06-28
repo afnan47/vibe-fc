@@ -135,8 +135,9 @@ export default function App() {
     }
   };
 
-  // Determine FUT Card quality (Gold, Silver, Bronze) based on vibe score
+  // Determine FUT Card quality (Gold, Silver, Bronze, TOTS) based on vibe score
   const getCardClass = (score) => {
+    if (score >= 85) return 'tots';
     if (score >= 80) return 'gold';
     if (score >= 60) return 'silver';
     return 'bronze';
@@ -189,20 +190,23 @@ export default function App() {
           textTransform: 'uppercase',
           letterSpacing: '2px',
           marginBottom: '1rem'
-        }}>
+        }} className="ea-slant-panel">
           ⚽ Vibe Scout Pipeline
         </div>
         <h1 style={{
-          fontSize: '3.5rem',
-          fontWeight: '800',
-          lineHeight: '1.1',
+          fontSize: '4rem',
+          fontWeight: '900',
+          fontStyle: 'italic',
+          fontFamily: "'Barlow Condensed', sans-serif",
+          lineHeight: '1.0',
           letterSpacing: '-1px',
+          textTransform: 'uppercase',
           background: 'linear-gradient(to right, #ffffff, #94a3b8)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           marginBottom: '0.5rem'
         }}>
-          FUT VIBE <span style={{ color: 'var(--fc-lime)' }}>FC</span>
+          FUT VIBE <span style={{ color: 'var(--fc-lime)', WebkitTextFillColor: 'var(--fc-lime)' }}>FC</span>
         </h1>
         <p style={{
           color: 'var(--text-secondary)',
@@ -446,6 +450,21 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              {/* TOTS/Elite badge — inside the left column so it doesn't become a grid item */}
+              {selectedTrack.vibe_score >= 85 && (
+                <div style={{
+                  fontWeight: '900',
+                  fontSize: '0.75rem',
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  background: 'linear-gradient(90deg, #ffd700, #ff8c00)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
+                  ⭐ TEAM OF THE SEASON
+                </div>
+              )}
             </div>
 
             {/* Right Column: Dashboard Panel */}
@@ -473,39 +492,6 @@ export default function App() {
                   />
                 )}
               </div>
-
-              {/* Song Preview Control — only shown when Spotify preview exists */}
-              {selectedTrack?.preview_url && (
-                <div className="preview-control-row">
-                  <div className="preview-track-info">
-                    <div className="preview-track-title">{selectedTrack.title}</div>
-                    <div className="preview-track-artist">{selectedTrack.artist}</div>
-                  </div>
-                  <button
-                    className={`preview-play-btn ${isPlaying ? 'is-playing' : ''}`}
-                    onClick={togglePlay}
-                    aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-                  >
-                    {isPlaying ? (
-                      /* Pause icon */
-                      <svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor">
-                        <rect x="0" y="0" width="4.5" height="16" rx="1.5"/>
-                        <rect x="9.5" y="0" width="4.5" height="16" rx="1.5"/>
-                      </svg>
-                    ) : (
-                      /* Play icon */
-                      <svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor">
-                        <polygon points="0,0 14,8 0,16"/>
-                      </svg>
-                    )}
-                  </button>
-                  {isPlaying && (
-                    <div className="preview-wave">
-                      <span/><span/><span/><span/><span/>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </>
         ) : (
@@ -597,7 +583,7 @@ export default function App() {
       </div>
 
       {/* Bottom Row: History Panel */}
-      <section className="glass-card" style={{
+      <section className="glass-card ea-slant-top" style={{
         marginTop: '2.5rem',
         maxWidth: '850px',
         marginRight: 'auto',
@@ -625,6 +611,70 @@ export default function App() {
           border-color: var(--fc-lime) !important;
         }
       `}</style>
+      {/* EA Trax Floating Audio Player */}
+      {selectedTrack?.preview_url && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '1.5rem',
+            right: '1.5rem',
+            zIndex: 999,
+            background: 'rgba(12, 14, 22, 0.95)',
+            border: '1px solid rgba(203, 249, 0, 0.25)',
+            borderRadius: '12px',
+            padding: '0.75rem 1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+            minWidth: '260px',
+            maxWidth: '320px',
+            animation: 'slideInFromRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+          }}
+        >
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, var(--fc-lime), transparent)', borderRadius: '12px 12px 0 0' }} />
+          <div style={{
+            width: '40px', height: '40px', borderRadius: '6px', flexShrink: 0,
+            backgroundImage: selectedTrack.cover_art_url ? `url(${selectedTrack.cover_art_url})` : 'none',
+            backgroundSize: 'cover', backgroundPosition: 'center',
+            backgroundColor: selectedTrack.cover_art_url ? 'transparent' : 'rgba(203,249,0,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem',
+          }}>
+            {!selectedTrack.cover_art_url && '🎵'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: '700', fontSize: '0.8rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedTrack.title}</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedTrack.artist}</div>
+            {isPlaying && (
+              <div style={{ display: 'flex', gap: '2px', marginTop: '4px', alignItems: 'flex-end', height: '12px' }}>
+                {[1,2,3,4,5].map(i => (
+                  <div key={i} style={{ width: '3px', background: 'var(--fc-lime)', borderRadius: '2px', animation: `eqBar${i} ${0.4 + i * 0.1}s ease-in-out infinite alternate`, height: '100%' }} />
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={togglePlay}
+            style={{
+              width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+              border: '1.5px solid rgba(203,249,0,0.4)',
+              background: isPlaying ? 'var(--fc-lime)' : 'transparent',
+              color: isPlaying ? '#12141c' : 'var(--fc-lime)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s ease',
+            }}
+            aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
+          >
+            {isPlaying ? (
+              <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor"><rect x="0" y="0" width="4" height="14" rx="1.5" /><rect x="8" y="0" width="4" height="14" rx="1.5" /></svg>
+            ) : (
+              <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor"><polygon points="0,0 12,7 0,14" /></svg>
+            )}
+          </button>
+          <div style={{ position: 'absolute', top: '-8px', left: '10px', background: 'var(--fc-lime)', color: '#12141c', fontSize: '0.55rem', fontWeight: '900', letterSpacing: '1.5px', textTransform: 'uppercase', padding: '1px 6px', borderRadius: '4px' }}>EA TRAX</div>
+        </div>
+      )}
     </div>
   );
 }

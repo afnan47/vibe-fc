@@ -84,13 +84,11 @@ async def check_vibe(track_input: str = Query(..., description="Spotify URL, URI
     # TIER 1: Check Supabase DB Cache
     cached_record = lookup_cache(track_id)
     if cached_record:
-        # If cache hit but missing preview or cover art (e.g. legacy cache entries)
-        if not cached_record.get('preview_url') or not cached_record.get('cover_art_url'):
+        if (not cached_record.get('preview_url') or not cached_record.get('cover_art_url')) and cached_record.get('source') != 'official_spotify_api':
             metadata = fetch_spotify_metadata_via_embed(track_id)
             if metadata:
                 cached_record['preview_url'] = metadata.get('preview_url')
                 cached_record['cover_art_url'] = metadata.get('cover_art_url')
-                # Attempt to update cache with new fields
                 save_cache(cached_record, cached_record['vibe_score'])
         return cached_record
         
@@ -112,24 +110,25 @@ async def check_vibe(track_input: str = Query(..., description="Spotify URL, URI
     if not track_data:
         raise HTTPException(status_code=404, detail="Track features could not be found.")
         
-    # TIER 4: Fetch metadata & preview URL using Spotify Embed Scraper (unless already populated by official api)
-    if not track_data.get('preview_url') or not track_data.get('cover_art_url') or track_data.get('title') == 'Unknown Song':
+    # TIER 4: Fetch metadata & preview URL via Spotify Embed Scraper
+    # Only needed when official Spotify API was NOT the source (it already returns full metadata)
+    needs_metadata = (
+        not track_data.get('preview_url')
+        or not track_data.get('cover_art_url')
+        or track_data.get('title') == 'Unknown Song'
+    )
+    if needs_metadata and track_data.get('source') != 'official_spotify_api':
         metadata = fetch_spotify_metadata_via_embed(track_id)
         if metadata:
             track_data['title'] = metadata.get('title') or track_data.get('title') or 'Unknown Song'
             track_data['artist'] = metadata.get('artist') or track_data.get('artist') or 'Unknown Artist'
             track_data['preview_url'] = metadata.get('preview_url') or track_data.get('preview_url')
             track_data['cover_art_url'] = metadata.get('cover_art_url') or track_data.get('cover_art_url')
-        else:
-            track_data.setdefault('title', 'Unknown Song')
-            track_data.setdefault('artist', 'Unknown Artist')
-            track_data.setdefault('preview_url', None)
-            track_data.setdefault('cover_art_url', None)
-    else:
-        track_data.setdefault('title', 'Unknown Song')
-        track_data.setdefault('artist', 'Unknown Artist')
-        track_data.setdefault('preview_url', None)
-        track_data.setdefault('cover_art_url', None)
+
+    track_data.setdefault('title', 'Unknown Song')
+    track_data.setdefault('artist', 'Unknown Artist')
+    track_data.setdefault('preview_url', None)
+    track_data.setdefault('cover_art_url', None)
         
     # Calculate vibe score using our One-Class SVM model
     try:
@@ -177,6 +176,36 @@ async def get_random_presets(limit: int = 4):
         return presets
     except Exception as e:
         print(f"Error fetching random presets: {e}")
+        return []
+
+@app.get("/api/search")
+async def search_tracks(q: str = Query(..., description="Search query: song name or artist"), limit: int = 10):
+    """Searches the golden dataset CSV by song name or artist for omnibox autocomplete."""
+    csv_path = "The Ultimate FUT Playlist.csv"
+    if not os.path.exists(csv_path):
+        csv_path = os.path.join("..", csv_path)
+        if not os.path.exists(csv_path):
+            return []
+    try:
+        df = pd.read_csv(csv_path, encoding='latin-1')
+        q_lower = q.lower().strip()
+        if not q_lower:
+            return []
+        mask = (
+            df['Song'].str.lower().str.contains(q_lower, na=False) |
+            df['Artist'].str.lower().str.contains(q_lower, na=False)
+        )
+        results = df[mask].dropna(subset=['Spotify Track Id', 'Song', 'Artist']).head(limit)
+        return [
+            {
+                'id': str(row['Spotify Track Id']),
+                'name': str(row['Song']),
+                'artist': str(row['Artist'])
+            }
+            for _, row in results.iterrows()
+        ]
+    except Exception as e:
+        print(f"Search error: {e}")
         return []
 
 @app.get("/api/history")
