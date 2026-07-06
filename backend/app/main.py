@@ -1,15 +1,16 @@
 import os
 import re
+import asyncio
 import pandas as pd
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from .fetcher import extract_track_id, search_local_csv, fetch_spotify_metadata_via_embed, query_sharded_parquet_lake, fetch_from_rapidapi, fetch_from_spotify_api, fetch_fallback_metadata_features
+from .fetcher import extract_track_id, search_local_csv, fetch_spotify_metadata_via_embed, query_sharded_parquet_lake, fetch_from_rapidapi, fetch_fallback_metadata_features, fetch_track_data
 from .cache import lookup_cache, save_cache, get_supabase_client
 from .model import score_track, load_model_assets
-from .scouter import get_scouter_playlist, run_daily_scout
+from .scouter import get_scouter_playlist, run_daily_scout_async
 
 _scheduler = None
 
@@ -18,20 +19,20 @@ _scheduler = None
 async def lifespan(app: FastAPI):
     global _scheduler
 
-    # Seed initial scout if DB is empty
+    # Seed initial scout if DB is empty (Asynchronously, so it doesn't block startup)
     try:
         client = get_supabase_client()
         if client:
             res = client.table("scouted_tracks").select("track_id", count="exact").limit(1).execute()
             if res.count == 0:
-                print("[Startup] scouted_tracks is empty — running initial seed crawl...")
-                run_daily_scout()
+                print("[Startup] scouted_tracks is empty — running initial seed crawl in background...")
+                asyncio.create_task(run_daily_scout_async())
     except Exception as e:
         print(f"[Startup] Seed scout check error: {e}")
 
-    # Start 24h recurring scheduler
-    _scheduler = BackgroundScheduler()
-    _scheduler.add_job(run_daily_scout, "interval", hours=24, id="daily_scout", replace_existing=True)
+    # Start 24h recurring scheduler using AsyncIOScheduler
+    _scheduler = AsyncIOScheduler()
+    _scheduler.add_job(run_daily_scout_async, "interval", hours=24, id="daily_scout", replace_existing=True)
     _scheduler.start()
     print("[Startup] Daily scouter scheduler started (24h interval).")
 
@@ -129,70 +130,34 @@ async def check_vibe(track_input: str = Query(..., description="Spotify URL, URI
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
         
-    # TIER 1: Check Supabase DB Cache
-    cached_record = lookup_cache(track_id)
+    # TIER 1: Check Supabase DB Cache (non-blocking)
+    cached_record = await asyncio.to_thread(lookup_cache, track_id)
     if cached_record:
         if (not cached_record.get('preview_url') or not cached_record.get('cover_art_url')) and cached_record.get('source') != 'official_spotify_api':
-            metadata = fetch_spotify_metadata_via_embed(track_id)
+            metadata = await asyncio.to_thread(fetch_spotify_metadata_via_embed, track_id)
             if metadata:
                 cached_record['preview_url'] = metadata.get('preview_url')
                 cached_record['cover_art_url'] = metadata.get('cover_art_url')
-                save_cache(cached_record, cached_record['vibe_score'])
+                await asyncio.to_thread(save_cache, cached_record, cached_record['vibe_score'])
         return cached_record
         
-    # TIER 2: Check Local CSV
-    track_data = search_local_csv(track_id)
+    # Query track data from the parallel async 4-tier pipeline
+    track_data = await fetch_track_data(track_id)
     
-    # TIER 3: Check Sharded Parquet Lake via DuckDB
-    if not track_data:
-        track_data = query_sharded_parquet_lake(track_id)
-        
-    # TIER 3.5: Check Live API Fallback (RapidAPI)
-    if not track_data:
-        track_data = fetch_from_rapidapi(track_id)
-        
-    # TIER 3.6: Check Official Spotify Web API Fallback (using SPOTIFY_CLIENT_ID / SECRET credentials)
-    if not track_data:
-        track_data = fetch_from_spotify_api(track_id)
-        
-    # TIER 3.7: Fetch metadata via Embed and generate fallback features
-    if not track_data:
-        track_data = fetch_fallback_metadata_features(track_id)
-        
     if not track_data:
         raise HTTPException(status_code=404, detail="Track features could not be found.")
         
-    # TIER 4: Fetch metadata & preview URL via Spotify Embed Scraper
-    # Only needed when official Spotify API was NOT the source (it already returns full metadata)
-    needs_metadata = (
-        not track_data.get('preview_url')
-        or not track_data.get('cover_art_url')
-        or track_data.get('title') == 'Unknown Song'
-    )
-    if needs_metadata and track_data.get('source') != 'official_spotify_api':
-        metadata = fetch_spotify_metadata_via_embed(track_id)
-        if metadata:
-            track_data['title'] = metadata.get('title') or track_data.get('title') or 'Unknown Song'
-            track_data['artist'] = metadata.get('artist') or track_data.get('artist') or 'Unknown Artist'
-            track_data['preview_url'] = metadata.get('preview_url') or track_data.get('preview_url')
-            track_data['cover_art_url'] = metadata.get('cover_art_url') or track_data.get('cover_art_url')
-
-    track_data.setdefault('title', 'Unknown Song')
-    track_data.setdefault('artist', 'Unknown Artist')
-    track_data.setdefault('preview_url', None)
-    track_data.setdefault('cover_art_url', None)
-        
-    # Calculate vibe score using our One-Class SVM model
+    # Calculate vibe score using our One-Class SVM model (non-blocking)
     try:
-        vibe_score, decision_dist = score_track(track_data)
+        vibe_score, decision_dist = await asyncio.to_thread(score_track, track_data)
     except Exception as e:
         # Fallback in case model isn't trained yet
         print(f"Inference error: {e}")
         vibe_score = 50.0 # Standard fallback
         
-    # Save to Supabase Cache
+    # Save to Supabase Cache (non-blocking)
     track_data['vibe_score'] = vibe_score
-    save_cache(track_data, vibe_score)
+    await asyncio.to_thread(save_cache, track_data, vibe_score)
     
     return track_data
 

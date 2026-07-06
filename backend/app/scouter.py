@@ -3,6 +3,8 @@ import re
 import json
 import time
 import xml.etree.ElementTree as ET
+import asyncio
+import concurrent.futures
 from datetime import date, datetime
 
 import requests
@@ -14,9 +16,9 @@ from .fetcher import (
     search_local_csv,
     query_sharded_parquet_lake,
     fetch_from_rapidapi,
-    fetch_from_spotify_api,
     fetch_spotify_metadata_via_embed,
     fetch_fallback_metadata_features,
+    fetch_track_data,
 )
 from .model import score_track
 
@@ -118,29 +120,38 @@ def crawl_pitchfork(max_tracks: int = 15) -> list[dict]:
         if not entries:
             entries = root.findall(".//item")
 
-        tracks = []
+        candidates_to_resolve = []
         for entry in entries:
-            if len(tracks) >= max_tracks:
+            if len(candidates_to_resolve) >= max_tracks:
                 break
             title_el = entry.find("atom:title", ns) or entry.find("title")
-            desc_el = entry.find("atom:summary", ns) or entry.find("description")
             if title_el is None or title_el.text is None:
                 continue
 
             raw_title = title_el.text.strip()
             artist, song = _parse_pitchfork_title(raw_title)
-            if not song or not artist:
-                continue
+            if song and artist:
+                candidates_to_resolve.append((song, artist))
 
-            track_id = _search_spotify_id(song, artist)
-            if track_id:
-                tracks.append({
-                    "track_id": track_id,
-                    "title": song,
-                    "artist": artist,
-                    "source_platform": "pitchfork",
-                })
-            time.sleep(0.3)
+        tracks = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_song = {
+                executor.submit(_search_spotify_id, song, artist): (song, artist)
+                for song, artist in candidates_to_resolve
+            }
+            for future in concurrent.futures.as_completed(future_to_song):
+                song, artist = future_to_song[future]
+                try:
+                    track_id = future.result()
+                    if track_id:
+                        tracks.append({
+                            "track_id": track_id,
+                            "title": song,
+                            "artist": artist,
+                            "source_platform": "pitchfork",
+                        })
+                except Exception as e:
+                    print(f"[Scouter] Spotify ID search failed for '{song}' by '{artist}': {e}")
 
         print(f"[Scouter] Pitchfork: resolved {len(tracks)} tracks")
         return tracks
@@ -176,26 +187,36 @@ def crawl_soundcloud(max_tracks: int = 15) -> list[dict]:
             return []
 
         data = r.json()
-        tracks = []
+        candidates_to_resolve = []
         for entry in data.get("collection", []):
             t = entry.get("track", {})
             if not t.get("permalink_url"):
                 continue
             title = t.get("title", "")
             artist = t.get("user", {}).get("username", "")
+            candidates_to_resolve.append((title, artist))
 
-            track_id = _search_spotify_id(title, artist)
-            if track_id:
-                tracks.append({
-                    "track_id": track_id,
-                    "title": title,
-                    "artist": artist,
-                    "source_platform": "soundcloud",
-                })
-            if len(tracks) >= max_tracks:
-                break
-            time.sleep(0.3)
-
+        tracks = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_song = {
+                executor.submit(_search_spotify_id, title, artist): (title, artist)
+                for title, artist in candidates_to_resolve
+            }
+            for future in concurrent.futures.as_completed(future_to_song):
+                title, artist = future_to_song[future]
+                try:
+                    track_id = future.result()
+                    if track_id:
+                        tracks.append({
+                            "track_id": track_id,
+                            "title": title,
+                            "artist": artist,
+                            "source_platform": "soundcloud",
+                        })
+                except Exception as e:
+                    print(f"[Scouter] Spotify ID search failed for '{title}' by '{artist}': {e}")
+                    
+        tracks = tracks[:max_tracks]
         print(f"[Scouter] SoundCloud: resolved {len(tracks)} tracks")
         return tracks
     except Exception as e:
@@ -356,63 +377,14 @@ def _extract_soundcloud_client_id() -> str | None:
     return None
 
 
-# ---------------------------------------------------------------------------
-# Orchestrator
-# ---------------------------------------------------------------------------
-
-def _fetch_features(track_id: str) -> dict | None:
-    """Run the existing 4-tier feature pipeline for a single track_id."""
-    cached = lookup_cache(track_id)
-    if cached:
-        return cached
-
-    data = search_local_csv(track_id)
-    if not data:
-        data = query_sharded_parquet_lake(track_id)
-    if not data:
-        data = fetch_from_rapidapi(track_id)
-    if not data:
-        data = fetch_from_spotify_api(track_id)
-    if not data:
-        data = fetch_fallback_metadata_features(track_id)
-    if not data:
-        return None
-
-    needs_metadata = (
-        not data.get("preview_url")
-        or not data.get("cover_art_url")
-        or data.get("title") == "Unknown Song"
-    )
-    if needs_metadata and data.get("source") != "official_spotify_api":
-        meta = fetch_spotify_metadata_via_embed(track_id)
-        if meta:
-            data["title"] = meta.get("title") or data.get("title", "Unknown Song")
-            data["artist"] = meta.get("artist") or data.get("artist", "Unknown Artist")
-            data["preview_url"] = meta.get("preview_url") or data.get("preview_url")
-            data["cover_art_url"] = meta.get("cover_art_url") or data.get("cover_art_url")
-
-    data.setdefault("title", "Unknown Song")
-    data.setdefault("artist", "Unknown Artist")
-    data.setdefault("preview_url", None)
-    data.setdefault("cover_art_url", None)
-
-    try:
-        vibe_score, _ = score_track(data)
-    except Exception as e:
-        print(f"[Scouter] Scoring error for {track_id}: {e}")
-        vibe_score = 50.0
-
-    data["vibe_score"] = vibe_score
-    save_cache(data, vibe_score)
-    return data
 
 
 def _get_today_batch() -> str:
     return date.today().isoformat()
 
 
-def run_daily_scout() -> list[dict]:
-    """Crawl all platforms, score, pick top 10 unique, save to Supabase."""
+async def run_daily_scout_async() -> list[dict]:
+    """Crawl all platforms in parallel, score, pick top 10 unique, save to Supabase."""
     print(f"[Scouter] === Daily Scout Run Started ({datetime.now().isoformat()}) ===")
 
     batch_id = _get_today_batch()
@@ -422,20 +394,32 @@ def run_daily_scout() -> list[dict]:
         print("[Scouter] Supabase client unavailable, can't persist scouted tracks.")
         return []
 
+    # Run platform crawlers in parallel threads
+    loop = asyncio.get_running_loop()
+    spotify_task = loop.run_in_executor(None, crawl_spotify_nmf)
+    pitchfork_task = loop.run_in_executor(None, crawl_pitchfork)
+    soundcloud_task = loop.run_in_executor(None, crawl_soundcloud)
+
+    await asyncio.gather(spotify_task, pitchfork_task, soundcloud_task)
+
+    spotify_tracks = spotify_task.result()
+    pitchfork_tracks = pitchfork_task.result()
+    soundcloud_tracks = soundcloud_task.result()
+
     raw_candidates: list[dict] = []
     seen_ids: set[str] = set()
 
     sources = [
-        ("Spotify NMF", crawl_spotify_nmf()),
-        ("Pitchfork", crawl_pitchfork()),
-        ("SoundCloud", crawl_soundcloud()),
+        ("Spotify NMF", spotify_tracks),
+        ("Pitchfork", pitchfork_tracks),
+        ("SoundCloud", soundcloud_tracks),
     ]
 
     # Ensure some initial pool size
     total_candidates = sum(len(c) for _, c in sources)
     if total_candidates < 10:
         needed = 15 - total_candidates
-        golden = crawl_golden_pool(needed)
+        golden = await asyncio.to_thread(crawl_golden_pool, needed)
         if golden:
             sources.append(("FUT Classic", golden))
 
@@ -450,10 +434,28 @@ def run_daily_scout() -> list[dict]:
 
     print(f"[Scouter] Total unique candidates: {len(raw_candidates)}")
 
+    async def process_candidate(c: dict) -> dict | None:
+        tid = c["track_id"]
+        try:
+            cached = await asyncio.to_thread(lookup_cache, tid)
+            if cached:
+                return cached
+
+            track_data = await fetch_track_data(tid)
+            if track_data:
+                vibe_score, _ = await asyncio.to_thread(score_track, track_data)
+                track_data["vibe_score"] = vibe_score
+                await asyncio.to_thread(save_cache, track_data, vibe_score)
+                return track_data
+        except Exception as e:
+            print(f"[Scouter] Error processing candidate {tid}: {e}")
+        return None
+
+    tasks = [process_candidate(c) for c in raw_candidates]
+    results = await asyncio.gather(*tasks)
+
     scored: list[dict] = []
-    for i, c in enumerate(raw_candidates):
-        print(f"[Scouter]  [{i+1}/{len(raw_candidates)}] Fetching features for {c['track_id']}...")
-        features = _fetch_features(c["track_id"])
+    for c, features in zip(raw_candidates, results):
         if features and features.get("vibe_score") is not None:
             scored.append({
                 "track_id": c["track_id"],
@@ -464,22 +466,28 @@ def run_daily_scout() -> list[dict]:
                 "cover_art_url": features.get("cover_art_url"),
                 "preview_url": features.get("preview_url"),
             })
-        time.sleep(0.1)
 
     # Supplement from Golden Pool if we don't have enough successfully scored tracks
     if len(scored) < 10:
         print(f"[Scouter] Only {len(scored)} tracks successfully scored. Supplementing from Golden Pool...")
         needed = 15 - len(scored)
-        golden = crawl_golden_pool(needed)
+        golden = await asyncio.to_thread(crawl_golden_pool, needed)
+        
+        supplement_tasks = []
+        supplement_candidates = []
         for c in golden:
             tid = c["track_id"]
             if tid not in seen_ids:
                 seen_ids.add(tid)
-                print(f"[Scouter] Fetching features for Golden Pool track {tid}...")
-                features = _fetch_features(tid)
+                supplement_candidates.append(c)
+                supplement_tasks.append(process_candidate(c))
+                
+        if supplement_tasks:
+            supplement_results = await asyncio.gather(*supplement_tasks)
+            for c, features in zip(supplement_candidates, supplement_results):
                 if features and features.get("vibe_score") is not None:
                     scored.append({
-                        "track_id": tid,
+                        "track_id": c["track_id"],
                         "title": features.get("title", "Unknown"),
                         "artist": features.get("artist", "Unknown"),
                         "vibe_score": float(features["vibe_score"]),
@@ -497,7 +505,7 @@ def run_daily_scout() -> list[dict]:
 
     # Remove old batch for today (if re-run), then insert fresh
     try:
-        supabase.table("scouted_tracks").delete().eq("scout_batch_id", batch_id).execute()
+        await asyncio.to_thread(lambda: supabase.table("scouted_tracks").delete().eq("scout_batch_id", batch_id).execute())
     except Exception as e:
         print(f"[Scouter] Error clearing old batch: {e}")
 
@@ -510,12 +518,28 @@ def run_daily_scout() -> list[dict]:
             "source_platform": t["source_platform"],
         }
         try:
-            supabase.table("scouted_tracks").insert(payload).execute()
+            await asyncio.to_thread(lambda: supabase.table("scouted_tracks").insert(payload).execute())
         except Exception as e:
             print(f"[Scouter] Error inserting {t['track_id']}: {e}")
 
     print(f"[Scouter] === Daily Scout Complete ({datetime.now().isoformat()}) ===")
     return top10
+
+
+def run_daily_scout() -> list[dict]:
+    """Crawl all platforms, score, pick top 10 unique, save to Supabase (Sync Wrapper)."""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+    if loop.is_running():
+        # Run inside a ThreadPoolExecutor to prevent blocking the running loop
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            return executor.submit(lambda: asyncio.run(run_daily_scout_async())).result()
+    else:
+        return loop.run_until_complete(run_daily_scout_async())
 
 
 def get_scouter_playlist() -> list[dict]:

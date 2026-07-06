@@ -1,6 +1,7 @@
 import re
 import csv
 import os
+import asyncio
 import requests
 import json
 import duckdb
@@ -220,45 +221,6 @@ def fetch_from_rapidapi(track_id: str) -> dict:
         print(f"RapidAPI fallback query error: {e}")
     return None
 
-def fetch_from_spotify_api(track_id: str) -> dict:
-    """Fetches track audio features and metadata directly from the official Spotify API (using Spotipy)."""
-    sp = get_spotify_api_client()
-    if not sp:
-        print("Spotify API client not configured or initialized.")
-        return None
-    try:
-        # Get audio features
-        features_list = sp.audio_features([track_id])
-        if not features_list or features_list[0] is None:
-            print(f"No audio features found from Spotify API for {track_id}")
-            return None
-        
-        feat = features_list[0]
-        
-        # Get track metadata as well to make it comprehensive
-        meta = sp.track(track_id)
-        
-        return {
-            'track_id': track_id,
-            'title': meta.get('name', 'Unknown Song'),
-            'artist': ", ".join([a.get('name', '') for a in meta.get('artists', [])]) if meta.get('artists') else 'Unknown Artist',
-            'danceability': float(feat.get('danceability', 0.0)) * 100.0,
-            'energy': float(feat.get('energy', 0.0)) * 100.0,
-            'valence': float(feat.get('valence', 0.0)) * 100.0,
-            'tempo': float(feat.get('tempo', 120.0)),
-            'acousticness': float(feat.get('acousticness', 0.0)) * 100.0,
-            'loudness': float(feat.get('loudness', -6.0)),
-            'preview_url': meta.get('preview_url'),
-            'cover_art_url': meta.get('album', {}).get('images', [{}])[0].get('url') if meta.get('album', {}).get('images') else None,
-            'source': 'official_spotify_api'
-        }
-    except Exception as e:
-        print(f"Official Spotify API fallback error for {track_id}: {e}")
-        if "403" in str(e) or "premium" in str(e).lower():
-            disable_spotify_api()
-            print("Spotify API disabled due to 403 (No premium subscription). Switching to 100% web fallback.")
-    return None
-
 
 def fetch_fallback_metadata_features(track_id: str) -> dict | None:
     """Fetches track metadata via Spotify Embed and generates realistic fallback features."""
@@ -298,5 +260,68 @@ def fetch_fallback_metadata_features(track_id: str) -> dict | None:
         'cover_art_url': meta.get('cover_art_url'),
         'source': 'embed_metadata_fallback'
     }
+
+
+async def fetch_track_data(track_id: str) -> dict | None:
+    """Queries the 4-tier pipeline concurrently for remote fetches to prevent blocking.
+    
+    1. Checks local CSV (SQLite) first (sequential, fast point-lookup).
+    2. Runs remote lookups (DuckDB Parquet Lake, RapidAPI) concurrently.
+    3. Falls back to generating features via embed metadata as last resort.
+    4. Enriches with metadata via Embed scraper if needed.
+    """
+    # SQLite search (fast local lookup)
+    track_data = await asyncio.to_thread(search_local_csv, track_id)
+    if track_data:
+        return track_data
+
+    # Query remote tiers in parallel
+    tasks = {}
+    
+    if os.getenv("HF_REPO_ID"):
+        tasks[asyncio.create_task(asyncio.to_thread(query_sharded_parquet_lake, track_id))] = "parquet"
+        
+    if os.getenv("RAPIDAPI_KEY"):
+        tasks[asyncio.create_task(asyncio.to_thread(fetch_from_rapidapi, track_id))] = "rapidapi"
+
+    if tasks:
+        try:
+            while tasks:
+                done, pending = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
+                for task in done:
+                    res = task.result()
+                    if res:
+                        track_data = res
+                        for p_task in pending:
+                            p_task.cancel()
+                        break
+                if track_data:
+                    break
+                for task in done:
+                    tasks.pop(task)
+        except Exception as e:
+            print(f"Parallel remote lookup error: {e}")
+
+    # Fallback to Embed Scraper features + randomized distributions as a last resort
+    if not track_data:
+        track_data = await asyncio.to_thread(fetch_fallback_metadata_features, track_id)
+
+    # Enrich metadata if needed (e.g. if the source was parquet/rapidapi which has no title/preview)
+    if track_data:
+        needs_metadata = (
+            not track_data.get('preview_url')
+            or not track_data.get('cover_art_url')
+            or track_data.get('title') == 'Unknown Song'
+        )
+        if needs_metadata:
+            meta = await asyncio.to_thread(fetch_spotify_metadata_via_embed, track_id)
+            if meta:
+                track_data['title'] = meta.get('title') or track_data.get('title') or 'Unknown Song'
+                track_data['artist'] = meta.get('artist') or track_data.get('artist') or 'Unknown Artist'
+                track_data['preview_url'] = meta.get('preview_url') or track_data.get('preview_url')
+                track_data['cover_art_url'] = meta.get('cover_art_url') or track_data.get('cover_art_url')
+
+    return track_data
+
 
 
