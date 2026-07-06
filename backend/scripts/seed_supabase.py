@@ -18,40 +18,56 @@ def seed_database():
         print("Error: Supabase credentials not found in environment.")
         return
 
-    csv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "The Ultimate FUT Playlist.csv")
-    if not os.path.exists(csv_path):
-        print(f"Error: CSV file not found at {csv_path}")
+    import sqlite3
+    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "The Ultimate FUT Playlist.db")
+    if not os.path.exists(db_path):
+        print(f"Error: SQLite DB file not found at {db_path}")
         return
 
     print("Connecting to Supabase...")
     client = create_client(supabase_url, supabase_key)
     
-    print("Reading CSV tracks...")
+    print("Reading tracks from SQLite database...")
     tracks = []
-    with open(csv_path, mode='r', encoding='latin-1') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            track_id = row.get('Spotify Track Id')
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT track_id, title, artist, danceability, energy, valence, tempo, acousticness, loudness FROM tracks")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        for row in rows:
+            track_id = row[0]
             if not track_id or len(track_id.strip()) != 22:
                 continue
                 
+            dance = float(row[3])
+            energy = float(row[4])
+            valence = float(row[5])
+            tempo = float(row[6])
+            acoustic = float(row[7])
+            loudness = float(row[8])
+            
             # Build cache payload. Score is set to 100.0 (or we can estimate/fallback, but this guarantees it's scouted)
             tracks.append({
                 'track_id': track_id.strip(),
-                'title': row.get('Song', 'Unknown Song'),
-                'artist': row.get('Artist', 'Unknown Artist'),
-                'danceability': float(row.get('Dance', 0)) * 100.0 if float(row.get('Dance', 0)) <= 1.0 else float(row.get('Dance', 0)),
-                'energy': float(row.get('Energy', 0)) * 100.0 if float(row.get('Energy', 0)) <= 1.0 else float(row.get('Energy', 0)),
-                'valence': float(row.get('Valence', 0)) * 100.0 if float(row.get('Valence', 0)) <= 1.0 else float(row.get('Valence', 0)),
-                'tempo': float(row.get('BPM', 0)),
-                'acousticness': float(row.get('Acoustic', 0)) * 100.0 if float(row.get('Acoustic', 0)) <= 1.0 else float(row.get('Acoustic', 0)),
-                'loudness': float(row.get('Loud (Db)', 0)),
+                'title': row[1] or 'Unknown Song',
+                'artist': row[2] or 'Unknown Artist',
+                'danceability': dance * 100.0 if dance <= 1.0 else dance,
+                'energy': energy * 100.0 if energy <= 1.0 else energy,
+                'valence': valence * 100.0 if valence <= 1.0 else valence,
+                'tempo': tempo,
+                'acousticness': acoustic * 100.0 if acoustic <= 1.0 else acoustic,
+                'loudness': loudness,
                 'vibe_score': 100.0, # Pre-approved official soundtrack
                 'preview_url': None,
                 'cover_art_url': None
             })
+    except Exception as e:
+        print(f"Error reading SQLite database: {e}")
+        return
 
-    print(f"Loaded {len(tracks)} tracks from CSV. Seeding to Supabase...")
+    print(f"Loaded {len(tracks)} tracks from database. Seeding to Supabase...")
     
     # Upsert in batches of 100
     batch_size = 100

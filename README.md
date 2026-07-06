@@ -16,7 +16,7 @@ It replaces unreliable heuristic algorithms with a **One-Class Support Vector Ma
 The application features a high-performance **4-Tier Fetch & Cache** architecture:
 
 1. **Supabase Cloud DB Cache**: Instant point-lookups for previously scouted tracks. It stores track features, scraped album cover art, and 30-second audio previews. Legacy cached rows are dynamically upgraded and auto-repaired on the fly.
-2. **Local Golden Ground Dataset**: Instant fallback searches within the 1,400+ song offline training set (`The Ultimate FUT Playlist.csv`).
+2. **Local Golden Ground Dataset**: Instant fallback searches within the 1,400+ song offline training set (`The Ultimate FUT Playlist.db`).
 3. **Hugging Face Sharded Parquet Lake**: If the track is not cached or in the golden dataset, DuckDB performs remote range queries via HTTPFS on a sharded 256-million Spotify track dataset (`ozefe/spotify_audio_features`) hosted on Hugging Face, retrieving features in ~1s.
 4. **Live API Fallback (RapidAPI)**: If the song is a new release (2025/2026) and not present in the lake, the backend queries the Spotify Extended Audio Features API on RapidAPI (requires `RAPIDAPI_KEY` in `.env`).
 
@@ -50,7 +50,7 @@ vibe-fc/
 │   │   └── index.css          # FUT/EA FC dark-mode CSS design system
 │   └── package.json
 ├── dev.py                     # Single-command concurrent developer runner
-├── The Ultimate FUT Playlist.csv # Golden ground dataset (1,400+ tracks)
+├── The Ultimate FUT Playlist.db # Golden ground dataset SQLite DB (1,400+ tracks)
 ├── .env.example               # Environment variable template
 ├── LICENSE
 └── README.md                  # This documentation

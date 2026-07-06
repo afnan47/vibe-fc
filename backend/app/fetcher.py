@@ -49,36 +49,42 @@ def extract_track_id(input_str: str) -> str:
         
     raise ValueError("Invalid Spotify URL or Track ID format.")
 
-def search_local_csv(track_id: str, csv_path: str = "The Ultimate FUT Playlist.csv") -> dict:
-    """Searches the local CSV for the track. Returns formatted features if found, otherwise None."""
-    if not os.path.exists(csv_path):
+def search_local_csv(track_id: str, db_path: str = "The Ultimate FUT Playlist.db") -> dict:
+    """Searches the local SQLite database for the track. Returns formatted features if found, otherwise None."""
+    import sqlite3
+    if not os.path.exists(db_path):
         # Check one level up in case we are running from backend/app directory
-        parent_path = os.path.join("..", csv_path)
+        parent_path = os.path.join("..", db_path)
         if os.path.exists(parent_path):
-            csv_path = parent_path
+            db_path = parent_path
         else:
             return None
 
     try:
-        with open(csv_path, mode='r', encoding='latin-1') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row.get('Spotify Track Id') == track_id:
-                    # Found! Map the features exactly to what the model expects
-                    return {
-                        'track_id': track_id,
-                        'title': row.get('Song', 'Unknown Song'),
-                        'artist': row.get('Artist', 'Unknown Artist'),
-                        'danceability': float(row.get('Dance', 0)),
-                        'energy': float(row.get('Energy', 0)),
-                        'valence': float(row.get('Valence', 0)),
-                        'tempo': float(row.get('BPM', 0)),
-                        'acousticness': float(row.get('Acoustic', 0)),
-                        'loudness': float(row.get('Loud (Db)', 0)),
-                        'source': 'local_csv'
-                    }
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT track_id, title, artist, danceability, energy, valence, tempo, acousticness, loudness 
+            FROM tracks WHERE track_id = ?
+        """, (track_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return {
+                'track_id': row[0],
+                'title': row[1],
+                'artist': row[2],
+                'danceability': row[3],
+                'energy': row[4],
+                'valence': row[5],
+                'tempo': row[6],
+                'acousticness': row[7],
+                'loudness': row[8],
+                'source': 'local_csv'
+            }
     except Exception as e:
-        print(f"Error reading CSV: {e}")
+        print(f"Error querying SQLite: {e}")
     return None
 
 def fetch_spotify_metadata_via_embed(track_id: str) -> dict:

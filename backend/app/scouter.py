@@ -204,26 +204,33 @@ def crawl_soundcloud(max_tracks: int = 15) -> list[dict]:
 
 
 def crawl_golden_pool(count: int = 15) -> list[dict]:
-    """Pick random tracks from the golden dataset CSV as a guaranteed fallback."""
-    import pandas as pd
-    csv_path = "The Ultimate FUT Playlist.csv"
-    if not os.path.exists(csv_path):
-        csv_path = os.path.join("..", csv_path)
-        if not os.path.exists(csv_path):
-            print("[Scouter] Golden CSV not found, skipping pool.")
+    """Pick random tracks from the golden dataset SQLite DB as a guaranteed fallback."""
+    import sqlite3
+    db_path = "The Ultimate FUT Playlist.db"
+    if not os.path.exists(db_path):
+        db_path = os.path.join("..", db_path)
+        if not os.path.exists(db_path):
+            print("[Scouter] Golden SQLite DB not found, skipping pool.")
             return []
     try:
-        df = pd.read_csv(csv_path, encoding="latin-1")
-        valid = df.dropna(subset=["Spotify Track Id", "Song", "Artist"])
-        samples = valid.sample(n=min(count, len(valid)))
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT track_id, title, artist 
+            FROM tracks 
+            ORDER BY RANDOM() LIMIT ?
+        """, (count,))
+        rows = cursor.fetchall()
+        conn.close()
+        
         tracks = []
-        for _, row in samples.iterrows():
-            tid = str(row["Spotify Track Id"]).strip()
+        for row in rows:
+            tid = row[0].strip()
             if len(tid) == 22:
                 tracks.append({
                     "track_id": tid,
-                    "title": str(row.get("Song", "Unknown")),
-                    "artist": str(row.get("Artist", "Unknown")),
+                    "title": row[1],
+                    "artist": row[2],
                     "source_platform": "fut_classic",
                 })
         print(f"[Scouter] Golden Pool: selected {len(tracks)} tracks")

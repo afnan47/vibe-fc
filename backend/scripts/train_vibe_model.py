@@ -5,10 +5,22 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import OneClassSVM
 import joblib
 
-def train_pipeline(csv_path, models_dir):
-    print(f"Loading dataset from {csv_path}...")
-    # Read the CSV with latin-1 encoding to avoid decoding errors
-    df = pd.read_csv(csv_path, encoding='latin-1')
+def train_pipeline(db_path, models_dir):
+    print(f"Loading dataset from {db_path}...")
+    import sqlite3
+    conn = sqlite3.connect(db_path)
+    # Read the data from SQLite DB directly into a DataFrame
+    df = pd.read_sql_query("""
+        SELECT 
+            danceability AS Dance, 
+            energy AS Energy, 
+            valence AS Valence, 
+            tempo AS BPM, 
+            acousticness AS Acoustic, 
+            loudness AS [Loud (Db)] 
+        FROM tracks
+    """, conn)
+    conn.close()
     
     # Selected features
     features = ['Dance', 'Energy', 'Valence', 'BPM', 'Acoustic', 'Loud (Db)']
@@ -113,11 +125,11 @@ def predict_track_vibe(raw_features, scaler, model, calibration_params):
     return vibe_percentage, d
 
 if __name__ == '__main__':
-    csv_path = 'The Ultimate FUT Playlist.csv'
+    db_path = 'The Ultimate FUT Playlist.db'
     models_dir = 'backend/models'
     
     # Train
-    scaler, model, calibration = train_pipeline(csv_path, models_dir)
+    scaler, model, calibration = train_pipeline(db_path, models_dir)
     
     # Run test cases from requirements
     print("Running Verification Verification...")

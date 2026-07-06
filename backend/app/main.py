@@ -61,44 +61,58 @@ def get_dataset_stats():
     if _dataset_stats is not None:
         return _dataset_stats
         
-    csv_path = "The Ultimate FUT Playlist.csv"
-    if not os.path.exists(csv_path):
+    db_path = "The Ultimate FUT Playlist.db"
+    if not os.path.exists(db_path):
         # Check parent folder
-        csv_path = os.path.join("..", csv_path)
-        if not os.path.exists(csv_path):
+        db_path = os.path.join("..", db_path)
+        if not os.path.exists(db_path):
             return {}
             
+    import sqlite3
     try:
-        df = pd.read_csv(csv_path, encoding='latin-1')
-        features = ['Dance', 'Energy', 'Valence', 'BPM', 'Acoustic', 'Loud (Db)']
-        clean_df = df[features].dropna()
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
         
-        # Calculate averages
+        # Calculate stats using SQLite aggregate functions
+        cursor.execute("""
+            SELECT 
+                COUNT(*),
+                AVG(danceability), AVG(energy), AVG(valence), AVG(tempo), AVG(acousticness), AVG(loudness),
+                MIN(danceability), MIN(energy), MIN(valence), MIN(tempo), MIN(acousticness), MIN(loudness),
+                MAX(danceability), MAX(energy), MAX(valence), MAX(tempo), MAX(acousticness), MAX(loudness)
+            FROM tracks
+        """)
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row or row[0] == 0:
+            return {}
+            
         stats = {
-            'count': int(len(clean_df)),
+            'count': int(row[0]),
             'averages': {
-                'danceability': float(clean_df['Dance'].mean()),
-                'energy': float(clean_df['Energy'].mean()),
-                'valence': float(clean_df['Valence'].mean()),
-                'tempo': float(clean_df['BPM'].mean()),
-                'acousticness': float(clean_df['Acoustic'].mean()),
-                'loudness': float(clean_df['Loud (Db)'].mean())
+                'danceability': float(row[1] or 0),
+                'energy': float(row[2] or 0),
+                'valence': float(row[3] or 0),
+                'tempo': float(row[4] or 0),
+                'acousticness': float(row[5] or 0),
+                'loudness': float(row[6] or 0)
             },
             'mins': {
-                'danceability': float(clean_df['Dance'].min()),
-                'energy': float(clean_df['Energy'].min()),
-                'valence': float(clean_df['Valence'].min()),
-                'tempo': float(clean_df['BPM'].min()),
-                'acousticness': float(clean_df['Acoustic'].min()),
-                'loudness': float(clean_df['Loud (Db)'].min())
+                'danceability': float(row[7] or 0),
+                'energy': float(row[8] or 0),
+                'valence': float(row[9] or 0),
+                'tempo': float(row[10] or 0),
+                'acousticness': float(row[11] or 0),
+                'loudness': float(row[12] or 0)
             },
             'maxs': {
-                'danceability': float(clean_df['Dance'].max()),
-                'energy': float(clean_df['Energy'].max()),
-                'valence': float(clean_df['Valence'].max()),
-                'tempo': float(clean_df['BPM'].max()),
-                'acousticness': float(clean_df['Acoustic'].max()),
-                'loudness': float(clean_df['Loud (Db)'].max())
+                'danceability': float(row[13] or 0),
+                'energy': float(row[14] or 0),
+                'valence': float(row[15] or 0),
+                'tempo': float(row[16] or 0),
+                'acousticness': float(row[17] or 0),
+                'loudness': float(row[18] or 0)
             }
         }
         _dataset_stats = stats
@@ -106,6 +120,7 @@ def get_dataset_stats():
     except Exception as e:
         print(f"Error calculating stats: {e}")
         return {}
+
 
 @app.get("/api/vibe")
 async def check_vibe(track_input: str = Query(..., description="Spotify URL, URI, or 22-char Track ID")):
@@ -190,24 +205,30 @@ async def get_stats():
 
 @app.get("/api/random-presets")
 async def get_random_presets(limit: int = 4):
-    """Returns a list of random songs from the FIFA dataset CSV."""
-    csv_path = "The Ultimate FUT Playlist.csv"
-    if not os.path.exists(csv_path):
-        csv_path = os.path.join("..", csv_path)
-        if not os.path.exists(csv_path):
+    """Returns a list of random songs from the FIFA dataset SQLite DB."""
+    db_path = "The Ultimate FUT Playlist.db"
+    if not os.path.exists(db_path):
+        db_path = os.path.join("..", db_path)
+        if not os.path.exists(db_path):
             return []
+    import sqlite3
     try:
-        df = pd.read_csv(csv_path, encoding='latin-1')
-        # Filter tracks that have valid IDs, songs, artists, and features
-        valid_df = df.dropna(subset=['Spotify Track Id', 'Song', 'Artist'])
-        # Pick random samples
-        samples = valid_df.sample(n=min(limit, len(valid_df)))
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT track_id, title, artist 
+            FROM tracks 
+            ORDER BY RANDOM() LIMIT ?
+        """, (limit,))
+        rows = cursor.fetchall()
+        conn.close()
+        
         presets = []
-        for _, row in samples.iterrows():
+        for row in rows:
             presets.append({
-                'id': str(row['Spotify Track Id']),
-                'name': str(row['Song']),
-                'artist': str(row['Artist']),
+                'id': row[0],
+                'name': row[1],
+                'artist': row[2],
                 'desc': 'FUT Classic'
             })
         return presets
@@ -217,29 +238,37 @@ async def get_random_presets(limit: int = 4):
 
 @app.get("/api/search")
 async def search_tracks(q: str = Query(..., description="Search query: song name or artist"), limit: int = 10):
-    """Searches the golden dataset CSV by song name or artist for omnibox autocomplete."""
-    csv_path = "The Ultimate FUT Playlist.csv"
-    if not os.path.exists(csv_path):
-        csv_path = os.path.join("..", csv_path)
-        if not os.path.exists(csv_path):
+    """Searches the golden dataset SQLite DB by song name or artist for omnibox autocomplete."""
+    db_path = "The Ultimate FUT Playlist.db"
+    if not os.path.exists(db_path):
+        db_path = os.path.join("..", db_path)
+        if not os.path.exists(db_path):
             return []
+    
+    q_clean = q.strip()
+    if not q_clean:
+        return []
+        
+    import sqlite3
     try:
-        df = pd.read_csv(csv_path, encoding='latin-1')
-        q_lower = q.lower().strip()
-        if not q_lower:
-            return []
-        mask = (
-            df['Song'].str.lower().str.contains(q_lower, na=False) |
-            df['Artist'].str.lower().str.contains(q_lower, na=False)
-        )
-        results = df[mask].dropna(subset=['Spotify Track Id', 'Song', 'Artist']).head(limit)
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT track_id, title, artist 
+            FROM tracks 
+            WHERE title LIKE ? OR artist LIKE ? 
+            LIMIT ?
+        """, (f"%{q_clean}%", f"%{q_clean}%", limit))
+        rows = cursor.fetchall()
+        conn.close()
+        
         return [
             {
-                'id': str(row['Spotify Track Id']),
-                'name': str(row['Song']),
-                'artist': str(row['Artist'])
+                'id': row[0],
+                'name': row[1],
+                'artist': row[2]
             }
-            for _, row in results.iterrows()
+            for row in rows
         ]
     except Exception as e:
         print(f"Search error: {e}")
