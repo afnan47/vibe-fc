@@ -13,14 +13,17 @@ It replaces unreliable heuristic algorithms with a **One-Class Support Vector Ma
 
 ## 🏗️ System Architecture & Caching Pipeline
 
-The application features a high-performance **4-Tier Fetch & Cache** architecture:
+The application features an optimized **Fetch, Scrape & Smart-Route** caching pipeline:
 
-1. **Supabase Cloud DB Cache**: Instant point-lookups for previously scouted tracks. It stores track features, scraped album cover art, and 30-second audio previews. Legacy cached rows are dynamically upgraded and auto-repaired on the fly.
-2. **Local Golden Ground Dataset**: Instant fallback searches within the 1,400+ song offline training set (`The Ultimate FUT Playlist.db`).
-3. **Hugging Face Sharded Parquet Lake**: If the track is not cached or in the golden dataset, DuckDB performs remote range queries via HTTPFS on a sharded 256-million Spotify track dataset (`ozefe/spotify_audio_features`) hosted on Hugging Face, retrieving features in ~1s.
-4. **Live API Fallback (RapidAPI)**: If the song is a new release (2025/2026) and not present in the lake, the backend queries the Spotify Extended Audio Features API on RapidAPI (requires `RAPIDAPI_KEY` in `.env`).
+1. **Supabase Cloud DB Cache**: Instant point-lookups for previously scouted tracks, checking an in-memory LRU cache first to avoid database network hops. It stores track features, album cover art, and 30-second audio previews.
+2. **Local SQLite Golden DB**: Fast offline lookup within the 1,400+ authentic FIFA training set tracks (`The Ultimate FUT Playlist.db`).
+3. **Upfront Keyless Embed Scrape**: On a cache/SQLite miss, the backend fetches metadata (title, artist, cover art, preview URL) and the **release date** via a keyless Spotify Embed scraper.
+4. **Smart Date-Based Router**:
+   * **Post-July 2025 releases**: The backend bypasses the Hugging Face dataset entirely (since it cuts off at July 2025) and queries **RapidAPI (Spotify Extended Audio Features API)** directly, saving DuckDB latency.
+   * **Pre-July 2025 releases**: The backend queries the **Hugging Face Sharded Parquet Lake** (using DuckDB to perform remote range queries via HTTPFS). If it misses, it falls back to **RapidAPI**.
+5. **Statistical Fallback**: If all lookup channels fail, the backend generates realistic normal-distributed audio features merged with the scraped metadata.
 
-Any newly resolved track is automatically enriched with cover art and 30-second preview URLs using a **keyless Spotify Embed metadata scraper** (which extracts Next.js hydration props completely for free) and cached in Supabase.
+Any resolved track is automatically cached in Supabase for subsequent queries.
 
 ---
 

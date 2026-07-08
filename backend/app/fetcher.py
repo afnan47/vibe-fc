@@ -125,12 +125,20 @@ def fetch_spotify_metadata_via_embed(track_id: str) -> dict:
         image = visual_identity.get('image', [])
         if image and isinstance(image, list) and len(image) > 0:
             cover_art_url = image[0].get('url')
-            
+
+        release_date = entity.get('releaseDate', {})
+        release_date_str = None
+        if isinstance(release_date, dict):
+            release_date_str = release_date.get('isoString')
+        elif isinstance(release_date, str):
+            release_date_str = release_date
+
         return {
             'title': title,
             'artist': artist_name,
             'preview_url': preview_url,
-            'cover_art_url': cover_art_url
+            'cover_art_url': cover_art_url,
+            'release_date': release_date_str
         }
     except Exception as e:
         print(f"Spotify embed metadata fetch error: {e}")
@@ -222,10 +230,11 @@ def fetch_from_rapidapi(track_id: str) -> dict:
     return None
 
 
-def fetch_fallback_metadata_features(track_id: str) -> dict | None:
+def fetch_fallback_metadata_features(track_id: str, meta: dict = None) -> dict | None:
     """Fetches track metadata via Spotify Embed and generates realistic fallback features."""
     import random
-    meta = fetch_spotify_metadata_via_embed(track_id)
+    if not meta:
+        meta = fetch_spotify_metadata_via_embed(track_id)
     if not meta:
         return None
 
@@ -262,13 +271,40 @@ def fetch_fallback_metadata_features(track_id: str) -> dict | None:
     }
 
 
+def is_released_after_july_2025(release_date_data: dict | str | None) -> bool:
+    """Checks if a Spotify release date falls after July 2025."""
+    if not release_date_data:
+        return False
+    date_str = release_date_data.get('isoString') if isinstance(release_date_data, dict) else release_date_data
+    if not date_str:
+        return False
+    try:
+        match_year = re.match(r'^(\d{4})', date_str)
+        if not match_year:
+            return False
+        year = int(match_year.group(1))
+        if year > 2025:
+            return True
+        if year < 2025:
+            return False
+        match_month = re.match(r'^\d{4}-(\d{2})', date_str)
+        if match_month:
+            return int(match_month.group(1)) >= 8  # August 2025 onwards
+    except Exception as e:
+        print(f"Error parsing release date '{date_str}': {e}")
+    return False
+
+
 async def fetch_track_data(track_id: str, path_steps: list = None) -> dict | None:
-    """Queries the 4-tier pipeline concurrently for remote fetches to prevent blocking.
+    """Queries the optimized 4-tier pipeline dynamically using track release date:
     
-    1. Checks local CSV (SQLite) first (sequential, fast point-lookup).
-    2. Runs remote lookups (DuckDB Parquet Lake, RapidAPI) concurrently.
-    3. Falls back to generating features via embed metadata as last resort.
-    4. Enriches with metadata via Embed scraper if needed.
+    1. Checks local CSV (SQLite) first (sequential, fast offline lookup).
+    2. Scrapes Spotify Embed metadata to get the release date.
+    3. Routes the feature queries based on release date:
+       - Released after July 2025: Skip DuckDB Parquet lake and query RapidAPI.
+       - Released on/before July 2025 (or unknown): Query DuckDB Parquet lake, then fall back to RapidAPI on a miss.
+    4. Merges returned features with the upfront metadata.
+    5. Falls back to generating features via embed metadata as last resort.
     """
     if path_steps is not None:
         path_steps.append("Local SQLite DB Lookup")
@@ -283,89 +319,166 @@ async def fetch_track_data(track_id: str, path_steps: list = None) -> dict | Non
     if path_steps is not None:
         path_steps[-1] += " (Miss)"
 
-    # Query remote tiers in parallel
-    tasks = {}
+    # Step 2: Upfront Spotify Embed Metadata Fetch
+    if path_steps is not None:
+        path_steps.append("Spotify Embed Metadata Lookup")
     
-    # Track which services we are querying
-    queried_services = []
-    
-    if os.getenv("HF_REPO_ID"):
-        task = asyncio.create_task(asyncio.to_thread(query_sharded_parquet_lake, track_id))
-        tasks[task] = "parquet"
-        queried_services.append("DuckDB Parquet Lake")
+    meta = await asyncio.to_thread(fetch_spotify_metadata_via_embed, track_id)
+    release_date = None
+    if meta:
+        release_date = meta.get('release_date')
+        if path_steps is not None:
+            date_label = release_date.split('T')[0] if release_date else 'Unknown'
+            path_steps[-1] += f" (Success, Date: {date_label})"
     else:
         if path_steps is not None:
-            path_steps.append("DuckDB Parquet Lake (Skipped - HF_REPO_ID not set)")
-        
-    if os.getenv("RAPIDAPI_KEY"):
-        task = asyncio.create_task(asyncio.to_thread(fetch_from_rapidapi, track_id))
-        tasks[task] = "rapidapi"
-        queried_services.append("RapidAPI")
-    else:
-        if path_steps is not None:
-            path_steps.append("RapidAPI (Skipped - RAPIDAPI_KEY not set)")
+            path_steps[-1] += " (Failed)"
 
-    if tasks:
-        if path_steps is not None:
-            path_steps.append(f"Parallel Remote Lookup ({', '.join(queried_services)})")
-        try:
-            while tasks:
-                done, pending = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
-                for task in done:
-                    res = task.result()
-                    if res:
-                        track_data = res
-                        if path_steps is not None:
-                            service_name = tasks[task]
-                            path_steps[-1] += f" -> {service_name.upper()} (Hit)"
-                        for p_task in pending:
-                            p_task.cancel()
-                        break
-                if track_data:
-                    break
-                for task in done:
-                    tasks.pop(task)
-            
-            if not track_data and path_steps is not None:
-                path_steps[-1] += " -> (All Miss)"
-        except Exception as e:
-            print(f"Parallel remote lookup error: {e}")
+    features = None
+
+    # Step 3: Routing logic based on release date
+    if meta:
+        is_new_release = is_released_after_july_2025(release_date)
+        if is_new_release:
+            # Route: Post-July 2025 (Skip Parquet Lake)
             if path_steps is not None:
-                path_steps[-1] += " -> (Error)"
+                path_steps.append("Route: Post-July 2025 -> Skip Parquet Lake")
+            
+            if os.getenv("RAPIDAPI_KEY"):
+                if path_steps is not None:
+                    path_steps.append("RapidAPI Lookup")
+                features = await asyncio.to_thread(fetch_from_rapidapi, track_id)
+                if features:
+                    if path_steps is not None:
+                        path_steps[-1] += " (Hit)"
+                else:
+                    if path_steps is not None:
+                        path_steps[-1] += " (Miss)"
+            else:
+                if path_steps is not None:
+                    path_steps.append("RapidAPI (Skipped - RAPIDAPI_KEY not set)")
+        else:
+            # Route: Pre-July 2025 (Query Parquet first, then RapidAPI fallback)
+            if path_steps is not None:
+                path_steps.append("Route: Pre-July 2025 -> Parquet Lake First")
+                
+            # 1. Try Parquet Lake
+            if os.getenv("HF_REPO_ID"):
+                if path_steps is not None:
+                    path_steps.append("DuckDB Parquet Lake Lookup")
+                features = await asyncio.to_thread(query_sharded_parquet_lake, track_id)
+                if features:
+                    if path_steps is not None:
+                        path_steps[-1] += " (Hit)"
+                else:
+                    if path_steps is not None:
+                        path_steps[-1] += " (Miss)"
+            else:
+                if path_steps is not None:
+                    path_steps.append("DuckDB Parquet Lake (Skipped - HF_REPO_ID not set)")
+                    
+            # 2. Try RapidAPI fallback if Parquet misses
+            if not features:
+                if os.getenv("RAPIDAPI_KEY"):
+                    if path_steps is not None:
+                        path_steps.append("RapidAPI Fallback Lookup")
+                    features = await asyncio.to_thread(fetch_from_rapidapi, track_id)
+                    if features:
+                        if path_steps is not None:
+                            path_steps[-1] += " (Hit)"
+                    else:
+                        if path_steps is not None:
+                            path_steps[-1] += " (Miss)"
+                else:
+                    if path_steps is not None:
+                        path_steps.append("RapidAPI Fallback (Skipped - RAPIDAPI_KEY not set)")
+    else:
+        # Embed scraper failed completely, so we do a legacy parallel remote lookup
+        if path_steps is not None:
+            path_steps.append("Route: Unknown Date -> Parallel Remote Lookup")
+            
+        tasks = {}
+        queried_services = []
+        
+        if os.getenv("HF_REPO_ID"):
+            task = asyncio.create_task(asyncio.to_thread(query_sharded_parquet_lake, track_id))
+            tasks[task] = "parquet"
+            queried_services.append("DuckDB Parquet Lake")
+        else:
+            if path_steps is not None:
+                path_steps.append("DuckDB Parquet Lake (Skipped - HF_REPO_ID not set)")
+            
+        if os.getenv("RAPIDAPI_KEY"):
+            task = asyncio.create_task(asyncio.to_thread(fetch_from_rapidapi, track_id))
+            tasks[task] = "rapidapi"
+            queried_services.append("RapidAPI")
+        else:
+            if path_steps is not None:
+                path_steps.append("RapidAPI (Skipped - RAPIDAPI_KEY not set)")
+                
+        if tasks:
+            try:
+                while tasks:
+                    done, pending = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
+                    for task in done:
+                        res = task.result()
+                        if res:
+                            features = res
+                            if path_steps is not None:
+                                service_name = tasks[task]
+                                path_steps[-1] += f" -> {service_name.upper()} (Hit)"
+                            for p_task in pending:
+                                p_task.cancel()
+                            break
+                    if features:
+                        break
+                    for task in done:
+                        tasks.pop(task)
+                
+                if not features and path_steps is not None:
+                    path_steps[-1] += " -> (All Miss)"
+            except Exception as e:
+                print(f"Parallel remote lookup error: {e}")
+                if path_steps is not None:
+                    path_steps[-1] += " -> (Error)"
 
-    # Fallback to Embed Scraper features + randomized distributions as a last resort
-    if not track_data:
+    # Step 4: Merge features and metadata, or trigger fallback features
+    track_data = None
+    if features:
+        track_data = features
+        # If we got metadata from upfront Embed scrape, merge it
+        if meta:
+            track_data['title'] = meta.get('title') or track_data.get('title') or 'Unknown Song'
+            track_data['artist'] = meta.get('artist') or track_data.get('artist') or 'Unknown Artist'
+            track_data['preview_url'] = meta.get('preview_url') or track_data.get('preview_url')
+            track_data['cover_art_url'] = meta.get('cover_art_url') or track_data.get('cover_art_url')
+        else:
+            # Metadata fetch failed earlier, try to enrich metadata now as fallback
+            if path_steps is not None:
+                path_steps.append("Spotify Embed Metadata Enrichment (Late)")
+            meta_late = await asyncio.to_thread(fetch_spotify_metadata_via_embed, track_id)
+            if meta_late:
+                if path_steps is not None:
+                    path_steps[-1] += " (Success)"
+                track_data['title'] = meta_late.get('title') or track_data.get('title') or 'Unknown Song'
+                track_data['artist'] = meta_late.get('artist') or track_data.get('artist') or 'Unknown Artist'
+                track_data['preview_url'] = meta_late.get('preview_url') or track_data.get('preview_url')
+                track_data['cover_art_url'] = meta_late.get('cover_art_url') or track_data.get('cover_art_url')
+            else:
+                if path_steps is not None:
+                    path_steps[-1] += " (Failed)"
+    else:
+        # Fallback to generating features using metadata
         if path_steps is not None:
             path_steps.append("Embed Metadata Fallback")
-        track_data = await asyncio.to_thread(fetch_fallback_metadata_features, track_id)
+        # Reuse pre-fetched metadata if available
+        track_data = await asyncio.to_thread(fetch_fallback_metadata_features, track_id, meta)
         if track_data:
             if path_steps is not None:
                 path_steps[-1] += " (Hit)"
         else:
             if path_steps is not None:
                 path_steps[-1] += " (Miss/Failed)"
-
-    # Enrich metadata if needed (e.g. if the source was parquet/rapidapi which has no title/preview)
-    if track_data:
-        needs_metadata = (
-            not track_data.get('preview_url')
-            or not track_data.get('cover_art_url')
-            or track_data.get('title') == 'Unknown Song'
-        )
-        if needs_metadata:
-            if path_steps is not None:
-                path_steps.append("Spotify Embed Metadata Enrichment")
-            meta = await asyncio.to_thread(fetch_spotify_metadata_via_embed, track_id)
-            if meta:
-                if path_steps is not None:
-                    path_steps[-1] += " (Success)"
-                track_data['title'] = meta.get('title') or track_data.get('title') or 'Unknown Song'
-                track_data['artist'] = meta.get('artist') or track_data.get('artist') or 'Unknown Artist'
-                track_data['preview_url'] = meta.get('preview_url') or track_data.get('preview_url')
-                track_data['cover_art_url'] = meta.get('cover_art_url') or track_data.get('cover_art_url')
-            else:
-                if path_steps is not None:
-                    path_steps[-1] += " (Failed)"
 
     return track_data
 
