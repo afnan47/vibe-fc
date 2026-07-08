@@ -47,16 +47,29 @@ def get_supabase_client() -> Client:
         print(f"Error initializing Supabase client: {e}")
         return None
 
-def lookup_cache(track_id: str) -> dict:
+def lookup_cache(track_id: str, path_steps: list = None) -> dict:
     """Looks up track features and vibe score, checking in-memory cache first."""
+    if path_steps is not None:
+        path_steps.append("Memory Cache Lookup")
+
     cached = lookup_memory_cache(track_id)
     if cached:
+        if path_steps is not None:
+            path_steps[-1] += " (Hit)"
         return cached
+
+    if path_steps is not None:
+        path_steps[-1] += " (Miss)"
 
     client = get_supabase_client()
     if not client:
+        if path_steps is not None:
+            path_steps.append("Supabase Cache Lookup (Skipped - No Client)")
         return None
-        
+
+    if path_steps is not None:
+        path_steps.append("Supabase Cache Lookup")
+
     try:
         res = client.table("track_cache").select("*").eq("track_id", track_id).execute()
         if res.data:
@@ -77,9 +90,16 @@ def lookup_cache(track_id: str) -> dict:
                 'source': 'supabase_cache'
             }
             save_memory_cache(record)
+            if path_steps is not None:
+                path_steps[-1] += " (Hit)"
             return record
+        else:
+            if path_steps is not None:
+                path_steps[-1] += " (Miss)"
     except Exception as e:
         print(f"Supabase cache lookup error: {e}")
+        if path_steps is not None:
+            path_steps[-1] += " (Error)"
     return None
 
 def save_cache(features: dict, vibe_score: float) -> bool:

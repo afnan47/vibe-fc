@@ -262,7 +262,7 @@ def fetch_fallback_metadata_features(track_id: str) -> dict | None:
     }
 
 
-async def fetch_track_data(track_id: str) -> dict | None:
+async def fetch_track_data(track_id: str, path_steps: list = None) -> dict | None:
     """Queries the 4-tier pipeline concurrently for remote fetches to prevent blocking.
     
     1. Checks local CSV (SQLite) first (sequential, fast point-lookup).
@@ -270,21 +270,44 @@ async def fetch_track_data(track_id: str) -> dict | None:
     3. Falls back to generating features via embed metadata as last resort.
     4. Enriches with metadata via Embed scraper if needed.
     """
+    if path_steps is not None:
+        path_steps.append("Local SQLite DB Lookup")
+        
     # SQLite search (fast local lookup)
     track_data = await asyncio.to_thread(search_local_csv, track_id)
     if track_data:
+        if path_steps is not None:
+            path_steps[-1] += " (Hit)"
         return track_data
+
+    if path_steps is not None:
+        path_steps[-1] += " (Miss)"
 
     # Query remote tiers in parallel
     tasks = {}
     
+    # Track which services we are querying
+    queried_services = []
+    
     if os.getenv("HF_REPO_ID"):
-        tasks[asyncio.create_task(asyncio.to_thread(query_sharded_parquet_lake, track_id))] = "parquet"
+        task = asyncio.create_task(asyncio.to_thread(query_sharded_parquet_lake, track_id))
+        tasks[task] = "parquet"
+        queried_services.append("DuckDB Parquet Lake")
+    else:
+        if path_steps is not None:
+            path_steps.append("DuckDB Parquet Lake (Skipped - HF_REPO_ID not set)")
         
     if os.getenv("RAPIDAPI_KEY"):
-        tasks[asyncio.create_task(asyncio.to_thread(fetch_from_rapidapi, track_id))] = "rapidapi"
+        task = asyncio.create_task(asyncio.to_thread(fetch_from_rapidapi, track_id))
+        tasks[task] = "rapidapi"
+        queried_services.append("RapidAPI")
+    else:
+        if path_steps is not None:
+            path_steps.append("RapidAPI (Skipped - RAPIDAPI_KEY not set)")
 
     if tasks:
+        if path_steps is not None:
+            path_steps.append(f"Parallel Remote Lookup ({', '.join(queried_services)})")
         try:
             while tasks:
                 done, pending = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
@@ -292,6 +315,9 @@ async def fetch_track_data(track_id: str) -> dict | None:
                     res = task.result()
                     if res:
                         track_data = res
+                        if path_steps is not None:
+                            service_name = tasks[task]
+                            path_steps[-1] += f" -> {service_name.upper()} (Hit)"
                         for p_task in pending:
                             p_task.cancel()
                         break
@@ -299,12 +325,25 @@ async def fetch_track_data(track_id: str) -> dict | None:
                     break
                 for task in done:
                     tasks.pop(task)
+            
+            if not track_data and path_steps is not None:
+                path_steps[-1] += " -> (All Miss)"
         except Exception as e:
             print(f"Parallel remote lookup error: {e}")
+            if path_steps is not None:
+                path_steps[-1] += " -> (Error)"
 
     # Fallback to Embed Scraper features + randomized distributions as a last resort
     if not track_data:
+        if path_steps is not None:
+            path_steps.append("Embed Metadata Fallback")
         track_data = await asyncio.to_thread(fetch_fallback_metadata_features, track_id)
+        if track_data:
+            if path_steps is not None:
+                path_steps[-1] += " (Hit)"
+        else:
+            if path_steps is not None:
+                path_steps[-1] += " (Miss/Failed)"
 
     # Enrich metadata if needed (e.g. if the source was parquet/rapidapi which has no title/preview)
     if track_data:
@@ -314,12 +353,19 @@ async def fetch_track_data(track_id: str) -> dict | None:
             or track_data.get('title') == 'Unknown Song'
         )
         if needs_metadata:
+            if path_steps is not None:
+                path_steps.append("Spotify Embed Metadata Enrichment")
             meta = await asyncio.to_thread(fetch_spotify_metadata_via_embed, track_id)
             if meta:
+                if path_steps is not None:
+                    path_steps[-1] += " (Success)"
                 track_data['title'] = meta.get('title') or track_data.get('title') or 'Unknown Song'
                 track_data['artist'] = meta.get('artist') or track_data.get('artist') or 'Unknown Artist'
                 track_data['preview_url'] = meta.get('preview_url') or track_data.get('preview_url')
                 track_data['cover_art_url'] = meta.get('cover_art_url') or track_data.get('cover_art_url')
+            else:
+                if path_steps is not None:
+                    path_steps[-1] += " (Failed)"
 
     return track_data
 

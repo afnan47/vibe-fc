@@ -11,6 +11,7 @@ from .fetcher import extract_track_id, search_local_csv, fetch_spotify_metadata_
 from .cache import lookup_cache, save_cache, get_supabase_client
 from .model import score_track, load_model_assets
 from .scouter import get_scouter_playlist, run_daily_scout_async
+from .search_logger import log_search_path
 
 _scheduler = None
 
@@ -130,21 +131,34 @@ async def check_vibe(track_input: str = Query(..., description="Spotify URL, URI
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
         
+    path_steps = []
+    
     # TIER 1: Check Supabase DB Cache (non-blocking)
-    cached_record = await asyncio.to_thread(lookup_cache, track_id)
+    cached_record = await asyncio.to_thread(lookup_cache, track_id, path_steps)
     if cached_record:
         if (not cached_record.get('preview_url') or not cached_record.get('cover_art_url')) and cached_record.get('source') != 'official_spotify_api':
+            path_steps.append("Metadata Scrape Enrichment")
             metadata = await asyncio.to_thread(fetch_spotify_metadata_via_embed, track_id)
             if metadata:
+                path_steps[-1] += " (Success)"
                 cached_record['preview_url'] = metadata.get('preview_url')
                 cached_record['cover_art_url'] = metadata.get('cover_art_url')
                 await asyncio.to_thread(save_cache, cached_record, cached_record['vibe_score'])
-        return cached_record
+            else:
+                path_steps[-1] += " (Failed)"
+        
+        final_source = cached_record.get('source') or 'supabase_cache'
+        log_search_path(track_id, path_steps, final_source, cached_record)
+        
+        response_record = dict(cached_record)
+        response_record['search_path'] = " -> ".join(path_steps)
+        return response_record
         
     # Query track data from the parallel async 4-tier pipeline
-    track_data = await fetch_track_data(track_id)
+    track_data = await fetch_track_data(track_id, path_steps)
     
     if not track_data:
+        log_search_path(track_id, path_steps, 'not_found')
         raise HTTPException(status_code=404, detail="Track features could not be found.")
         
     # Calculate vibe score using our One-Class SVM model (non-blocking)
@@ -159,7 +173,13 @@ async def check_vibe(track_input: str = Query(..., description="Spotify URL, URI
     track_data['vibe_score'] = vibe_score
     await asyncio.to_thread(save_cache, track_data, vibe_score)
     
-    return track_data
+    final_source = track_data.get('source') or 'unknown'
+    log_search_path(track_id, path_steps, final_source, track_data)
+    
+    response_data = dict(track_data)
+    response_data['search_path'] = " -> ".join(path_steps)
+    
+    return response_data
 
 @app.get("/api/stats")
 async def get_stats():
