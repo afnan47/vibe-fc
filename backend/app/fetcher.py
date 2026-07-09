@@ -90,6 +90,9 @@ def search_local_csv(track_id: str, db_path: str = "The Ultimate FUT Playlist.db
 
 def fetch_spotify_metadata_via_embed(track_id: str) -> dict:
     """Fetches track metadata (title, artist, cover art, and preview URL) from Spotify Embed."""
+    if os.getenv("ENV") == "production":
+        print("[Security] Enforcing API credentials in production. Embed scraper fallback is disabled.")
+        return None
     url = f"https://open.spotify.com/embed/track/{track_id}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

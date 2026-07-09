@@ -20,15 +20,15 @@ export default function VibeGauge({ score }) {
   let gradId = 'elite-grad';
   let strokeColor = 'var(--fc-lime)';
   let glowColor = 'var(--fc-lime-glow)';
-  let vibeLabel = 'FIFA ELITE';
-  let desc = 'Matches the high-intensity FUT vibe perfectly!';
+  let vibeLabel = 'ELITE VIBE';
+  let desc = 'Matches the high-intensity soundtrack vibe perfectly!';
 
   if (score < 50.0) {
     gradId = 'offbeat-grad';
     strokeColor = 'var(--text-muted)';
     glowColor = 'rgba(113, 128, 150, 0.15)';
     vibeLabel = 'OFF BEAT';
-    desc = 'Too slow, acoustic, or missing the energetic FIFA tempo.';
+    desc = 'Too slow, acoustic, or missing the energetic soundtrack tempo.';
   } else if (score < 75.0) {
     gradId = 'rotation-grad';
     strokeColor = 'var(--fc-blue)';
@@ -40,7 +40,7 @@ export default function VibeGauge({ score }) {
     strokeColor = 'var(--fc-purple)';
     glowColor = 'var(--fc-purple-glow)';
     vibeLabel = 'STARTING XI';
-    desc = 'Strong contender. Sits firmly in the FIFA soundtrack range.';
+    desc = 'Strong contender. Sits firmly in the soundtrack range.';
   }
 
   return (

@@ -163,14 +163,9 @@ def crawl_pitchfork(max_tracks: int = 15) -> list[dict]:
 def crawl_soundcloud(max_tracks: int = 15) -> list[dict]:
     """Fetch trending tracks from SoundCloud's public chart API."""
     if not SOUNDCLOUD_CLIENT_ID:
-        print("[Scouter] SOUNDCLOUD_CLIENT_ID not set, attempting to extract from web...")
-        cid = _extract_soundcloud_client_id()
-        if not cid:
-            print("[Scouter] Could not obtain SoundCloud client_id, skipping.")
-            return []
-        soundcloud_client_id = cid
-    else:
-        soundcloud_client_id = SOUNDCLOUD_CLIENT_ID
+        print("[Scouter] SOUNDCLOUD_CLIENT_ID not set. SoundCloud scraping is disabled for compliance.")
+        return []
+    soundcloud_client_id = SOUNDCLOUD_CLIENT_ID
 
     try:
         url = "https://api-v2.soundcloud.com/charts"
@@ -338,6 +333,9 @@ def _get_spotify_web_token() -> str | None:
 
 def _search_spotify_id_via_web(song: str, artist: str) -> str | None:
     """Search Spotify using their internal web API with an anonymous token."""
+    if os.getenv("ENV") == "production":
+        print("[Security] Enforcing API credentials in production. Web token search is disabled.")
+        return None
     token = _get_spotify_web_token()
     if not token:
         return None

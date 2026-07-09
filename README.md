@@ -1,11 +1,11 @@
-# FUT Vibe FC — FIFA Vibe Taste Checker ⚽🎮
+# VibeFC — Football Soundtrack Vibe Checker ⚽🎮
 
 ![Python](https://img.shields.io/badge/Python-3.12%2B-blue?style=flat-square&logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=flat-square&logo=fastapi)
 ![React](https://img.shields.io/badge/React-18%2B-61DAFB?style=flat-square&logo=react)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
-FUT Vibe FC is an end-to-end web application that evaluates whether a song matches the "FIFA soundtrack vibe" using machine learning. 
+VibeFC is an end-to-end web application that evaluates whether a song matches classic football gaming soundtracks using machine learning. 
 
 It replaces unreliable heuristic algorithms with a **One-Class Support Vector Machine (OC-SVM)** model with an **RBF Kernel**, trained exclusively on 1,400+ authentic tracks from actual FIFA / EA FC games. The model's decision margin is calibrated using a Sigmoid function to output a continuous vibe similarity score from `0.0%` to `100.0%`.
 
@@ -146,3 +146,14 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 ## 📄 License
 
 This project is licensed under the **MIT License**.
+
+---
+
+## ⚖️ Trademark Notice & Disclaimer
+
+VibeFC is a fan-made, community-driven project created for entertainment and research purposes. 
+
+This project is **not** affiliated, associated, authorized, endorsed by, or in any way officially connected with Electronic Arts Inc. (EA), EA Sports, FIFA, or any of their subsidiaries or affiliates. The names "FIFA", "FUT", "EA FC", and related trademarks, logos, and designs are registered trademarks of their respective owners. 
+
+All music metadata, album covers, and audio previews are properties of their respective copyright owners and are accessed via third-party publicly accessible CDNs.
+

@@ -168,7 +168,7 @@ function SearchBar({ onSearch, isLoading, value, onChange }) {
                 </div>
               ))}
               <div style={{ padding: '0.35rem 1rem', fontSize: '0.62rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.05)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                ⚽ FUT Golden Dataset
+                ⚽ Golden Dataset
               </div>
             </div>
           )}
@@ -198,7 +198,7 @@ function SearchBar({ onSearch, isLoading, value, onChange }) {
         justifyContent: 'center',
         gap: '6px'
       }}>
-        <span>Search directly for songs or artists featured in past <strong style={{ color: 'var(--fc-lime)', fontWeight: '700' }}>FIFA</strong> soundtracks!</span>
+        <span>Search directly for songs or artists featured in classic <strong style={{ color: 'var(--fc-lime)', fontWeight: '700' }}>football</strong> soundtracks!</span>
       </div>
 
       <style>{`

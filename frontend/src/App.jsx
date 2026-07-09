@@ -16,6 +16,7 @@ export default function App() {
 
   // Responsive & Active Tab States
   const [activeTab, setActiveTab] = useState('scout'); // 'scout' | 'showcase' | 'leaderboard'
+  const [activeModal, setActiveModal] = useState(null); // null | 'privacy' | 'terms'
 
   const [trackInput, setTrackInput] = useState('');
   const [presets, setPresets] = useState([]);
@@ -70,7 +71,6 @@ export default function App() {
         navigator.vibrate([100, 50, 100]);
       }
       
-      
       setHistory(prev => {
         const filtered = prev.filter(t => (t.id || t.track_id) !== (data.id || data.track_id));
         return [data, ...filtered].slice(0, 10);
@@ -92,7 +92,7 @@ export default function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div>
             <h1>
-              FUTVIBE
+              VIBEFC
             </h1>
           </div>
         </div>
@@ -124,6 +124,18 @@ export default function App() {
           <ScouterPlaylist onSelectTrack={(val) => handleSearch(val, false)} />
         </div>
       </div>
+
+      {/* Footer Disclaimer & Legal Links */}
+      <footer className="app-footer-bar">
+        <div className="footer-content">
+          <span>VibeFC is a fan-made soundtrack companion not affiliated with EA Sports or FIFA.</span>
+          <div className="footer-links">
+            <button className="footer-btn" onClick={() => setActiveModal('privacy')}>Privacy Policy</button>
+            <span className="footer-sep">|</span>
+            <button className="footer-btn" onClick={() => setActiveModal('terms')}>Terms of Service</button>
+          </div>
+        </div>
+      </footer>
 
       {/* MiniPlayer: Persistent mobile bottom bar */}
       <MiniPlayer
@@ -166,6 +178,42 @@ export default function App() {
           <span>Leaderboard</span>
         </button>
       </nav>
+
+      {/* Legal Modal Overlay */}
+      {activeModal && (
+        <div className="legal-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="legal-modal-content" onClick={e => e.stopPropagation()}>
+            <button className="legal-modal-close" onClick={() => setActiveModal(null)}>×</button>
+            {activeModal === 'privacy' ? (
+              <div className="legal-text-content">
+                <h2>Privacy Policy</h2>
+                <p className="last-updated">Last Updated: July 9, 2026</p>
+                <p>This Privacy Policy describes how VibeFC handles information when you use our website and services.</p>
+                <h3>1. Information We Do Not Collect</h3>
+                <p>We do not collect, store, or share any personal information, such as your name, email address, IP address, or physical location. No registration is required.</p>
+                <h3>2. Cached Data</h3>
+                <p>When you search or check a track, the track metadata (such as title, artist, cover art, and audio features) and its calculated vibe score are cached anonymously in our database to optimize future lookups.</p>
+                <h3>3. Third-Party Services</h3>
+                <p>We access metadata, cover art, and audio previews from public third-party CDNs (like Spotify). Their own terms and privacy policies apply to content accessed from their systems.</p>
+              </div>
+            ) : (
+              <div className="legal-text-content">
+                <h2>Terms of Service</h2>
+                <p className="last-updated">Last Updated: July 9, 2026</p>
+                <p>Welcome to VibeFC! By using our website, you agree to the following terms.</p>
+                <h3>1. Permitted Use</h3>
+                <p>This service is provided for personal, non-commercial entertainment and research. Automated query flooding or abuse is prohibited.</p>
+                <h3>2. Intellectual Property</h3>
+                <p>All music metadata, artists, album names, cover art, and audio previews remain properties of their respective copyright holders. VibeFC does not claim ownership over any musical assets.</p>
+                <h3>3. Disclaimer & Non-Affiliation</h3>
+                <p>FIFA, FUT, and EA FC are trademarks of Electronic Arts Inc. and FIFA. VibeFC is an independent fan-made platform not officially sponsored or endorsed by them.</p>
+                <h3>4. Warranties</h3>
+                <p>This service is provided "as is" without warranty of any kind, including vibe score accuracy or uninterrupted uptime.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

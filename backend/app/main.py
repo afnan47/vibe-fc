@@ -20,6 +20,10 @@ _scheduler = None
 async def lifespan(app: FastAPI):
     global _scheduler
 
+    if os.getenv("ENV") == "production":
+        if not (os.getenv("SPOTIFY_CLIENT_ID") and os.getenv("SPOTIFY_CLIENT_SECRET")):
+            raise RuntimeError("Production Mode Error: SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET environment variables must be set.")
+
     # Seed initial scout if DB is empty (Asynchronously, so it doesn't block startup)
     try:
         client = get_supabase_client()

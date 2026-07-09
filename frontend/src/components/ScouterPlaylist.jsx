@@ -6,7 +6,7 @@ const PLATFORM_META = {
   spotify_nmf: { label: 'NMF', color: '#1DB954', icon: 's', title: 'New Music Friday' },
   pitchfork: { label: 'PFK', color: '#ff4500', icon: 'P', title: 'Pitchfork' },
   soundcloud: { label: 'SC', color: '#ff7700', icon: 'S', title: 'SoundCloud' },
-  fut_classic: { label: 'FUT', color: '#cbf900', icon: 'F', title: 'FUT Classic' },
+  fut_classic: { label: 'GOLD', color: '#cbf900', icon: 'G', title: 'Golden Classic' },
 };
 
 function ScouterPlaylist({ onSelectTrack }) {
@@ -249,7 +249,7 @@ function ScouterPlaylist({ onSelectTrack }) {
                       fontWeight: '800',
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
-                      color: platform.label === 'FUT' ? '#12141c' : '#fff',
+                      color: platform.label === 'GOLD' ? '#12141c' : '#fff',
                       background: platform.color,
                       padding: '0.2rem 0.45rem',
                       borderRadius: '3.5px',
