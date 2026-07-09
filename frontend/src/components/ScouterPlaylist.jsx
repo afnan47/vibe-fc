@@ -102,7 +102,7 @@ function ScouterPlaylist({ onSelectTrack }) {
           borderRadius: '4px',
           border: '1px solid rgba(203, 249, 0, 0.2)',
         }}>
-          Top 10 Daily
+          Top 11 Daily
         </span>
       </div>
 
@@ -131,7 +131,7 @@ function ScouterPlaylist({ onSelectTrack }) {
             maxWidth: '200px',
             margin: 0,
           }}>
-            Daily scout in progress. Check back soon for the top 10 elite picks.
+            Daily scout in progress. Check back soon for the top 11 elite picks.
           </p>
         </div>
       ) : (

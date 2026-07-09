@@ -384,7 +384,7 @@ def _get_today_batch() -> str:
 
 
 async def run_daily_scout_async() -> list[dict]:
-    """Crawl all platforms in parallel, score, pick top 10 unique, save to Supabase."""
+    """Crawl all platforms in parallel, score, pick top 11 unique, save to Supabase."""
     print(f"[Scouter] === Daily Scout Run Started ({datetime.now().isoformat()}) ===")
 
     batch_id = _get_today_batch()
@@ -417,7 +417,7 @@ async def run_daily_scout_async() -> list[dict]:
 
     # Ensure some initial pool size
     total_candidates = sum(len(c) for _, c in sources)
-    if total_candidates < 10:
+    if total_candidates < 11:
         needed = 15 - total_candidates
         golden = await asyncio.to_thread(crawl_golden_pool, needed)
         if golden:
@@ -468,7 +468,7 @@ async def run_daily_scout_async() -> list[dict]:
             })
 
     # Supplement from Golden Pool if we don't have enough successfully scored tracks
-    if len(scored) < 10:
+    if len(scored) < 11:
         print(f"[Scouter] Only {len(scored)} tracks successfully scored. Supplementing from Golden Pool...")
         needed = 15 - len(scored)
         golden = await asyncio.to_thread(crawl_golden_pool, needed)
@@ -497,10 +497,10 @@ async def run_daily_scout_async() -> list[dict]:
                     })
 
     scored.sort(key=lambda x: x["vibe_score"], reverse=True)
-    top10 = scored[:10]
+    top11 = scored[:11]
 
-    print(f"[Scouter] === Top 10 Elite Tracks ===")
-    for i, t in enumerate(top10, 1):
+    print(f"[Scouter] === Top 11 Elite Tracks ===")
+    for i, t in enumerate(top11, 1):
         print(f"  {i}. {t['title']} - {t['artist']} ({t['vibe_score']:.1f}%) [{t['source_platform']}]")
 
     # Remove old batch for today (if re-run), then insert fresh
@@ -509,7 +509,7 @@ async def run_daily_scout_async() -> list[dict]:
     except Exception as e:
         print(f"[Scouter] Error clearing old batch: {e}")
 
-    for rank, t in enumerate(top10, 1):
+    for rank, t in enumerate(top11, 1):
         payload = {
             "track_id": t["track_id"],
             "scout_batch_id": batch_id,
@@ -523,11 +523,11 @@ async def run_daily_scout_async() -> list[dict]:
             print(f"[Scouter] Error inserting {t['track_id']}: {e}")
 
     print(f"[Scouter] === Daily Scout Complete ({datetime.now().isoformat()}) ===")
-    return top10
+    return top11
 
 
 def run_daily_scout() -> list[dict]:
-    """Crawl all platforms, score, pick top 10 unique, save to Supabase (Sync Wrapper)."""
+    """Crawl all platforms, score, pick top 11 unique, save to Supabase (Sync Wrapper)."""
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
@@ -543,19 +543,42 @@ def run_daily_scout() -> list[dict]:
 
 
 def get_scouter_playlist() -> list[dict]:
-    """Return today's top 10 from Supabase, with full metadata from track_cache."""
+    """Return today's top 11 from Supabase, with full metadata from track_cache.
+    
+    Falls back to the most recent scouted batch if today's batch is empty.
+    """
     supabase = get_supabase_client()
     if not supabase:
         return []
 
     batch_id = _get_today_batch()
     try:
+        # 1. Try today's batch
         res = supabase.table("scouted_tracks") \
             .select("*, track_cache!inner(title, artist, preview_url, cover_art_url)") \
             .eq("scout_batch_id", batch_id) \
             .order("scout_rank") \
             .execute()
-        return res.data or []
+        if res.data:
+            return res.data
+
+        # 2. Fallback: Find the most recent batch ID in the database
+        latest_batch_res = supabase.table("scouted_tracks") \
+            .select("scout_batch_id") \
+            .order("scout_batch_id", desc=True) \
+            .limit(1) \
+            .execute()
+
+        if latest_batch_res.data:
+            latest_batch_id = latest_batch_res.data[0]["scout_batch_id"]
+            res = supabase.table("scouted_tracks") \
+                .select("*, track_cache!inner(title, artist, preview_url, cover_art_url)") \
+                .eq("scout_batch_id", latest_batch_id) \
+                .order("scout_rank") \
+                .execute()
+            return res.data or []
+
+        return []
     except Exception as e:
         print(f"[Scouter] Error fetching playlist: {e}")
         return []

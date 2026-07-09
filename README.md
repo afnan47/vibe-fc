@@ -22,6 +22,7 @@ The application features an optimized **Fetch, Scrape & Smart-Route** caching pi
    * **Post-July 2025 releases**: The backend bypasses the Hugging Face dataset entirely (since it cuts off at July 2025) and queries **RapidAPI (Spotify Extended Audio Features API)** directly, saving DuckDB latency.
    * **Pre-July 2025 releases**: The backend queries the **Hugging Face Sharded Parquet Lake** (using DuckDB to perform remote range queries via HTTPFS). If it misses, it falls back to **RapidAPI**.
 5. **Statistical Fallback**: If all lookup channels fail, the backend generates realistic normal-distributed audio features merged with the scraped metadata.
+6. **Vibe Scouter Fallback**: The Daily Scouter endpoint returns today's top 11 ranked tracks. If the crawling scheduler has not run for the current date, the endpoint automatically retrieves the most recent successfully completed daily batch.
 
 Any resolved track is automatically cached in Supabase for subsequent queries.
 

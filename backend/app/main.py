@@ -275,7 +275,7 @@ async def get_history(limit: int = 10):
 
 @app.get("/api/scouter/playlist")
 async def scouter_playlist():
-    """Returns today's top 10 FIFA Elite scouted tracks."""
+    """Returns today's top 11 FIFA Elite scouted tracks."""
     return get_scouter_playlist()
 
 
