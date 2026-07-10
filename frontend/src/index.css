@@ -216,6 +216,7 @@ h1, h2, h3, .sports-font {
   perspective: 1200px;
   cursor: pointer;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 /* Authentic FUT Shield Shape utilizing dual layer for border */
@@ -438,7 +439,7 @@ h1, h2, h3, .sports-font {
 .fut-card .badge-rating {
   position: absolute;
   top: 2.2rem;
-  left: 1.25rem;
+  left: 1.65rem; /* Shifted from 1.25rem to prevent clipping on sloped corner */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -453,6 +454,10 @@ h1, h2, h3, .sports-font {
   font-weight: 900;
   font-family: 'Barlow Condensed', sans-serif;
   font-style: italic;
+}
+
+.fut-card .rating-val.three-digits {
+  font-size: 3.0rem; /* Scaled down to prevent clipping on 3-digit scores */
 }
 
 .fut-card .position-val {
@@ -648,8 +653,8 @@ h1, h2, h3, .sports-font {
 /* Rating block: top-left corner */
 .skel-rating-block {
   position: absolute;
-  top: 1.1rem;
-  left: 1.1rem;
+  top: 2.2rem; /* Aligned with badge-rating */
+  left: 1.65rem; /* Aligned with badge-rating */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1048,6 +1053,7 @@ h1, h2, h3, .sports-font {
 .player-dock {
   width: 300px;
   transition: width var(--transition-fast);
+  flex-shrink: 0;
 }
 @media (min-height: 850px) {
   .player-dock {
@@ -1077,6 +1083,7 @@ h1, h2, h3, .sports-font {
   width: 100%;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 .app-col-leaderboard {
   grid-area: leaderboard;
@@ -1515,6 +1522,73 @@ h1, h2, h3, .sports-font {
   .app-footer-bar {
     border-top: none;
     margin-top: 0.5rem;
+  }
+}
+
+/* Height-based responsive layout scaling for smaller screens (e.g. laptop displays) */
+@media (max-height: 740px) {
+  .fut-card {
+    width: 260px;
+    height: 380px;
+    padding: 1.25rem 1rem;
+  }
+  
+  .fut-card .rating-val {
+    font-size: 2.8rem;
+  }
+
+  .fut-card .rating-val.three-digits {
+    font-size: 2.3rem; /* Scaled down for 3-digit scores on small viewports */
+  }
+  
+  .fut-card .position-val {
+    font-size: 1rem;
+  }
+  
+  .fut-card .card-art {
+    width: 110px;
+    height: 110px;
+    margin-top: 0.35rem;
+    margin-bottom: 0.35rem;
+  }
+  
+  .fut-card .song-name {
+    font-size: 1.35rem;
+    margin-top: 0.2rem;
+  }
+  
+  .fut-card .artist-name {
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .fut-card .stats-grid {
+    margin-bottom: 0.4rem;
+    padding-top: 0.35rem;
+  }
+  
+  .fut-card .stat-val {
+    font-size: 1.15rem;
+  }
+  
+  .fut-card .stat-label {
+    font-size: 0.75rem;
+  }
+  
+  .player-dock {
+    width: 260px;
+    padding: 0.75rem 1rem;
+  }
+  
+  .fut-skeleton {
+    width: 260px;
+    height: 380px;
+    padding: 1.25rem 1rem;
+  }
+  
+  .skel-photo {
+    width: 110px;
+    height: 110px;
   }
 }
 

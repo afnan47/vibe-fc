@@ -9,6 +9,14 @@ VibeFC is an end-to-end web application that evaluates whether a song matches cl
 
 It replaces unreliable heuristic algorithms with a **One-Class Support Vector Machine (OC-SVM)** model with an **RBF Kernel**, trained exclusively on 1,400+ authentic tracks from actual FIFA / EA FC games. The model's decision margin is calibrated using a Sigmoid function to output a continuous vibe similarity score from `0.0%` to `100.0%`.
 
+### 📱 Responsive & Height-Adaptive Layout
+The application features a fully responsive UI design adapting to both width and height constraints:
+* **Height-Adaptive Scaling**: Automatically scales the central FUT card, card art, stats text, and player control dock using CSS container logic (via `@media (max-height: 740px)`) to fit smaller laptop screens.
+* **Flex Centering Protection**: Employs `flex-shrink: 0` constraints to prevent vertical overlap between the card and the player panel, and handles overflow via safe scrolling in the showcase column.
+* **Mobile Layout**: Seamlessly collapses into a clean bottom-nav tab bar structure for mobile, providing persistent playing controls via a persistent `MiniPlayer` component.
+* **FUT Card UI Sizing & Alignment**: Prevents rating number clipping inside the sloped top-left corner of the card by shifting the rating badge slightly right and dynamically scaling the rating font size for 3-digit scores (down to `3.0rem` / `2.3rem`).
+* **Normalized Audio Feature Display**: Scales and maps raw Spotify stats like Tempo (BPM) and Loudness (dB) to an authentic FIFA-style `45-99` rating scale on the card layout, matching standard gaming soundtrack UI.
+
 ---
 
 ## 🏗️ System Architecture & Caching Pipeline

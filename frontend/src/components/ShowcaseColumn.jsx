@@ -48,6 +48,15 @@ const LoadingSkeleton = () => (
 const TrackCard = memo(function TrackCard({ track }) {
   const { isPlaying } = useAudioPlayer();
 
+  const roundedScore = Math.round(track.vibe_score);
+  const isThreeDigits = roundedScore >= 100;
+  
+  // Normalize Tempo (BPM) from [65, 185] -> [45, 99]
+  const displayTempo = Math.round(45 + Math.max(0, Math.min(1, (track.tempo - 65) / 120)) * 54);
+  
+  // Normalize Loudness (dB) from [-16, -3] -> [45, 99]
+  const displayLoudness = Math.round(45 + Math.max(0, Math.min(1, (track.loudness - (-16)) / 13)) * 54);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.25rem', flexShrink: 0 }}>
       <div className="fut-card-wrapper"
@@ -75,7 +84,7 @@ const TrackCard = memo(function TrackCard({ track }) {
           <div className="fut-card-border-glow reveal-anim">
             <div className={`fut-card ${getCardClass(track.vibe_score)}`}>
               <div className="badge-rating">
-                <span className="rating-val">{Math.round(track.vibe_score)}</span>
+                <span className={`rating-val ${isThreeDigits ? 'three-digits' : ''}`}>{roundedScore}</span>
                 <span className="position-val">VIB</span>
               </div>
               <div className={`card-art ${isPlaying ? 'playing' : ''}`}
@@ -90,8 +99,8 @@ const TrackCard = memo(function TrackCard({ track }) {
                 <div className="stat-item"><span className="stat-label">DAN</span><span className="stat-val">{Math.round(track.danceability)}</span></div>
                 <div className="stat-item"><span className="stat-label">ENG</span><span className="stat-val">{Math.round(track.energy)}</span></div>
                 <div className="stat-item"><span className="stat-label">VAL</span><span className="stat-val">{Math.round(track.valence)}</span></div>
-                <div className="stat-item"><span className="stat-label">TEM</span><span className="stat-val">{Math.round(track.tempo)}</span></div>
-                <div className="stat-item"><span className="stat-label">LOU</span><span className="stat-val">{Math.round(track.loudness)}</span></div>
+                <div className="stat-item"><span className="stat-label">TEM</span><span className="stat-val">{displayTempo}</span></div>
+                <div className="stat-item"><span className="stat-label">LOU</span><span className="stat-val">{displayLoudness}</span></div>
                 <div className="stat-item"><span className="stat-label">ACO</span><span className="stat-val">{Math.round(track.acousticness)}</span></div>
               </div>
               <div className="badges-row">
@@ -158,7 +167,7 @@ const ShowcaseColumn = memo(function ShowcaseColumn({ activeTab, selectedTrack, 
           Warning: {error}
         </div>
       )}
-      <div style={{ flex: 1, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+      <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'min-content', padding: '1rem 0' }}>
         {isLoading ? (
           <LoadingSkeleton />
         ) : selectedTrack ? (
