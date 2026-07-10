@@ -20,7 +20,7 @@ The application features an optimized **Fetch, Scrape & Smart-Route** caching pi
 3. **Upfront Keyless Embed Scrape**: On a cache/SQLite miss, the backend fetches metadata (title, artist, cover art, preview URL) and the **release date** via a keyless Spotify Embed scraper.
 4. **Smart Date-Based Router**:
    * **Post-July 2025 releases**: The backend bypasses the Hugging Face dataset entirely (since it cuts off at July 2025) and queries **RapidAPI (Spotify Extended Audio Features API)** directly, saving DuckDB latency.
-   * **Pre-July 2025 releases**: The backend queries the **Hugging Face Sharded Parquet Lake** (using DuckDB to perform remote range queries via HTTPFS). If it misses, it falls back to **RapidAPI**.
+   * **Pre-July 2025 releases**: The backend queries the **Hugging Face Sharded Parquet Lake** (using DuckDB to perform remote range queries via HTTPFS on a consolidated single-file-per-partition structure, which bypasses Hugging Face globbing limits and ensures sub-second point lookups). If it misses, it falls back to **RapidAPI**.
 5. **Statistical Fallback**: If all lookup channels fail, the backend generates realistic normal-distributed audio features merged with the scraped metadata.
 6. **Vibe Scouter Fallback**: The Daily Scouter endpoint returns today's top 11 ranked tracks. If the crawling scheduler has not run for the current date, the endpoint automatically retrieves the most recent successfully completed daily batch.
 
@@ -142,6 +142,36 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 3. Commit your changes (`git commit -m 'feat: add my feature'`)
 4. Push to the branch (`git push origin feature/my-feature`)
 5. Open a Pull Request
+
+## 🚀 Deployment
+
+The project can be deployed easily as a unified Docker container where FastAPI builds and serves the React static frontend. 
+
+### 1. Build & Run Locally with Docker
+
+To test the production container configuration locally:
+
+```bash
+# Build the Docker image
+docker build -t vibe-fc .
+
+# Run the container
+docker run -p 8000:8000 --env-file .env vibe-fc
+```
+
+### 2. Supported Deployment Platforms
+
+For hobby and production hosting, the following options are recommended:
+
+*   **Hugging Face Spaces (Docker SDK) — *Highly Recommended***: Completely free hosting with 16GB RAM, 2 vCPUs, and **no automatic cold-start sleep/suspension** for active spaces. To deploy, create a new Space, select **Docker** as the SDK, select the **Blank** template, and add your environment variables under Space Settings -> Variables and secrets.
+*   **Render (Render.com)**: Easiest dockerized deployment. Set the service source type to **Docker**, bind the port to `$PORT`, and add your environment variables in the dashboard settings. *(Note: Render's Free tier container sleeps after 15 mins of inactivity)*.
+*   **Railway (Railway.app)**: Best for cheap, always-on deployments. Railway automatically builds from the root `Dockerfile` and deploys it.
+*   **Virtual Private Server (VPS)**: Standard docker-compose or container run setup with a reverse proxy (Nginx/Caddy) to manage SSL.
+
+### 3. Storage Architecture Note (SQLite & Supabase)
+The golden reference dataset SQLite database (`The Ultimate FUT Playlist.db`) is read-only and is packaged directly into the container. Newly scouted/analyzed tracks and session histories are stored in **Supabase Cloud DB**, so container recycling does not affect cached results or user history.
+
+---
 
 ## 📄 License
 

@@ -4,4 +4,5 @@
 4. Add scheduler when deployed.
 5. Adding in commercialization if possible. Should add buy me coffee link
 6. Deploy
-7. FINAL QC of songs, playlist generation, scouting and latencies.
+7. Better error messages
+8. FINAL QC of songs, playlist generation, scouting and latencies.
