@@ -155,7 +155,7 @@ def query_sharded_parquet_lake(track_id: str) -> dict:
         return None
         
     partition_key = track_id[0:2].lower()
-    url = f"https://huggingface.co/datasets/{hf_repo_id}/resolve/main/partition_key={partition_key}/*.parquet"
+    url = f"https://huggingface.co/datasets/{hf_repo_id}/resolve/main/partition_key={partition_key}/data.parquet"
     
     con = None
     try:
@@ -171,7 +171,6 @@ def query_sharded_parquet_lake(track_id: str) -> dict:
                     EXTRA_HTTP_HEADERS MAP {{'Authorization': 'Bearer {hf_token}'}}
                 );
             """)
-        con.execute("SET allow_asterisks_in_http_paths = true;")
             
         query = f"""
             SELECT loudness, acousticness, danceability, tempo, energy, valence
