@@ -88,11 +88,47 @@ def search_local_csv(track_id: str, db_path: str = "The Ultimate FUT Playlist.db
         print(f"Error querying SQLite: {e}")
     return None
 
+def fetch_spotify_metadata_via_api(track_id: str) -> dict | None:
+    """Fetches track metadata using the official Spotify Web API client."""
+    sp = get_spotify_api_client()
+    if not sp:
+        return None
+    try:
+        t = sp.track(track_id)
+        if t:
+            title = t.get('name') or "Unknown Song"
+            artist_name = ", ".join([a.get('name', '') for a in t.get('artists', []) if a.get('name')]) or "Unknown Artist"
+            preview_url = t.get('preview_url')
+            
+            cover_art_url = None
+            album = t.get('album', {})
+            images = album.get('images', [])
+            if images and len(images) > 0:
+                cover_art_url = images[0].get('url')
+                
+            release_date_str = album.get('release_date')
+            
+            return {
+                'title': title,
+                'artist': artist_name,
+                'preview_url': preview_url,
+                'cover_art_url': cover_art_url,
+                'release_date': release_date_str
+            }
+    except Exception as e:
+        print(f"Spotify API metadata fetch error: {e}")
+    return None
+
+
 def fetch_spotify_metadata_via_embed(track_id: str) -> dict:
     """Fetches track metadata (title, artist, cover art, and preview URL) from Spotify Embed."""
-    if os.getenv("ENV") == "production":
-        print("[Security] Enforcing API credentials in production. Embed scraper fallback is disabled.")
-        return None
+    # First, try the official API if credentials are set
+    try:
+        api_meta = fetch_spotify_metadata_via_api(track_id)
+        if api_meta:
+            return api_meta
+    except Exception as e:
+        print(f"Failed to fetch metadata via API: {e}")
     url = f"https://open.spotify.com/embed/track/{track_id}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
