@@ -1143,7 +1143,8 @@ h1, h2, h3, .sports-font {
   margin: 0;
 }
 
-.info-header-btn {
+.info-header-btn,
+.github-header-btn {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -1157,7 +1158,8 @@ h1, h2, h3, .sports-font {
   outline: none;
 }
 
-.info-header-btn:hover {
+.info-header-btn:hover,
+.github-header-btn:hover {
   color: var(--fc-lime);
   background: rgba(229, 193, 88, 0.08);
   transform: scale(1.05);

@@ -18,6 +18,7 @@ The application features a fully responsive UI design adapting to both width and
 * **Interactive Info/Disclaimer Modal**: Replaces the desktop-only footer on mobile viewports with a styled header info button (`ⓘ`) that triggers an overlay containing the about page, non-affiliation disclaimer, and legal links, ensuring full compliance on compact displays.
 * **FUT Card UI Sizing & Alignment**: Prevents rating number clipping inside the sloped top-left corner of the card by shifting the rating badge slightly right and dynamically scaling the rating font size for 3-digit scores (down to `3.0rem` / `2.3rem`).
 * **Normalized Audio Feature Display**: Scales and maps raw Spotify stats like Tempo (BPM) and Loudness (dB) to an authentic FIFA-style `45-99` rating scale on the card layout, matching standard gaming soundtrack UI.
+* **GitHub Integration**: Includes a sleek GitHub repository link and icon in the app header designed to match the application's dark mode visual aesthetic.
 
 ---
 
@@ -107,7 +108,7 @@ vibe-fc/
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/your-username/vibe-fc.git
+git clone https://github.com/afnan47/vibe-fc.git
 cd vibe-fc
 
 # Install Python backend dependencies
