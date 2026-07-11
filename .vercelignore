@@ -1,0 +1,18 @@
+# Exclude large data files
+*.parquet
+temp_dataset.parquet
+*.db-journal
+
+# Exclude virtual environments
+.venv/
+venv/
+env/
+
+# Exclude package manager folders and builds
+.cache/
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Exclude logs
+*.log
