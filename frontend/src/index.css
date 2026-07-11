@@ -1140,6 +1140,30 @@ h1, h2, h3, .sports-font {
   margin: 0;
 }
 
+.info-header-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.info-header-btn:hover {
+  color: var(--fc-lime);
+  background: rgba(229, 193, 88, 0.08);
+  transform: scale(1.05);
+}
+
+.info-header-btn:active {
+  transform: scale(0.95);
+}
+
 @media (max-width: 767px) {
   .app-header {
     justify-content: center !important;
@@ -1171,7 +1195,7 @@ h1, h2, h3, .sports-font {
     justify-content: space-around;
     align-items: center;
     z-index: 100;
-    margin: 0 -0.75rem -0.75rem -0.75rem;
+    margin: 0 -0.75rem 0 -0.75rem;
     padding-bottom: env(safe-area-inset-bottom);
     box-sizing: border-box;
     flex-shrink: 0;
@@ -1514,14 +1538,8 @@ h1, h2, h3, .sports-font {
 }
 
 @media (max-width: 768px) {
-  .footer-content {
-    flex-direction: column;
-    text-align: center;
-    padding-bottom: 5rem; /* Prevent blocking by bottom mobile nav */
-  }
   .app-footer-bar {
-    border-top: none;
-    margin-top: 0.5rem;
+    display: none !important;
   }
 }
 

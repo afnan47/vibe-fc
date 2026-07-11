@@ -15,6 +15,7 @@ The application features a fully responsive UI design adapting to both width and
 * **Height-Adaptive Scaling**: Automatically scales the central FUT card, card art, stats text, and player control dock using CSS container logic (via `@media (max-height: 740px)`) to fit smaller laptop screens.
 * **Flex Centering Protection**: Employs `flex-shrink: 0` constraints to prevent vertical overlap between the card and the player panel, and handles overflow via safe scrolling in the showcase column.
 * **Mobile Layout**: Seamlessly collapses into a clean bottom-nav tab bar structure for mobile, providing persistent playing controls via a persistent `MiniPlayer` component.
+* **Interactive Info/Disclaimer Modal**: Replaces the desktop-only footer on mobile viewports with a styled header info button (`ⓘ`) that triggers an overlay containing the about page, non-affiliation disclaimer, and legal links, ensuring full compliance on compact displays.
 * **FUT Card UI Sizing & Alignment**: Prevents rating number clipping inside the sloped top-left corner of the card by shifting the rating badge slightly right and dynamically scaling the rating font size for 3-digit scores (down to `3.0rem` / `2.3rem`).
 * **Normalized Audio Feature Display**: Scales and maps raw Spotify stats like Tempo (BPM) and Loudness (dB) to an authentic FIFA-style `45-99` rating scale on the card layout, matching standard gaming soundtrack UI.
 
@@ -35,6 +36,18 @@ The application features an optimized **Fetch, Scrape & Smart-Route** caching pi
 
 Any resolved track is automatically cached in Supabase for subsequent queries.
 
+### 🗓️ Daily Scouter & Music Discovery Engine
+
+The application aggregates fresh candidate tracks from the web, filters and scores them against our OC-SVM model, and posts the top 11 daily "elite" tracks to the leaderboard.
+
+*   **Platform Crawlers**:
+    *   **Spotify New Music Friday (NMF)**: Crawls the official NMF playlist using Spotipy (or an anonymous web-embed fallback scraper if no credentials exist).
+    *   **Pitchfork Best New Tracks Feed**: Parses track reviews from the Pitchfork RSS feed and resolves Spotify track IDs via search.
+    *   **SoundCloud Trending Charts**: Calls SoundCloud's public charts API (when `SOUNDCLOUD_CLIENT_ID` is set) and searches Spotify for matching IDs.
+*   **Ranking & Batching**: All unique tracks discovered from crawlers are analyzed and scored. The top 11 tracks are stored with a batch timestamp `scout_batch_id` and ranked 1 to 11.
+*   **Fallback Pool**: If the crawler output falls short of 11 successfully scored tracks, the engine automatically supplements the list with random tracks from the SQLite Golden Database.
+*   **Automatic Scheduler & Vercel Cron**: On localhost, the server uses an APScheduler interval (every 24 hours) to fetch and score new daily songs. In production on Vercel, the server disables the background thread and relies on Vercel Cron calling `/api/scouter/cron` secured with a `CRON_SECRET` header.
+
 ---
 
 ## 📂 Project Structure
@@ -43,23 +56,35 @@ Any resolved track is automatically cached in Supabase for subsequent queries.
 vibe-fc/
 ├── backend/
 │   ├── app/
-│   │   ├── cache.py           # Supabase DB cache controller
-│   │   ├── fetcher.py         # Spotify URL parsing + CSV & ReccoBeats fetcher
-│   │   ├── model.py           # Preprocessing & OC-SVM model inference
-│   │   └── main.py            # FastAPI endpoints (/api/vibe, /api/stats, /api/history)
+│   │   ├── cache.py           # Supabase DB cache controller & Memory LRU Cache
+│   │   ├── fetcher.py         # Spotify URL parsing + CSV, sharded parquet, & RapidAPI fetcher
+│   │   ├── model.py           # Preprocessing & OC-SVM model inference with Sigmoid calibration
+│   │   ├── main.py            # FastAPI endpoints (vibe checker, presets, autocomplete, history, cron)
+│   │   ├── scouter.py         # Daily music crawler & scouter discovery pipeline
+│   │   └── search_logger.py   # Logs the steps taken to evaluate queries
 │   ├── scripts/
-│   │   └── train_vibe_model.py # ML training and Sigmoid calibration script
+│   │   ├── convert_csv_to_sqlite.py # Populates the SQLite DB from CSV data
+│   │   ├── partition_dataset.py     # Date-based partitioning optimizer for sharded parquet lake
+│   │   ├── seed_supabase.py         # DB seeding script
+│   │   └── train_vibe_model.py      # ML training and Sigmoid calibration script
 │   ├── models/                # Saved model weights & calibration parameters
 │   ├── requirements.txt       # Python backend dependencies
 │   └── schema.sql             # SQL DDL script for Supabase DB setup
 ├── frontend/                  # React + Vite application
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── SearchBar.jsx    # Input bar with Spotify URL validation & animations
+│   │   │   ├── SearchBar.jsx    # Input bar with Spotify search autocomplete & animations
 │   │   │   ├── VibeGauge.jsx    # Circular progress score gauge (styled per FC tier)
-│   │   │   ├── FeatureChart.jsx # Custom SVG radar chart comparing values to average FUT song
-│   │   │   └── HistoryList.jsx  # Recently scouted songs with color-coded badges
-│   │   ├── App.jsx            # Main dashboard container
+│   │   │   ├── HistoryList.jsx  # Recently scouted songs list
+│   │   │   ├── MiniPlayer.jsx   # Collapsible bottom navigation playback control dock
+│   │   │   ├── PlayerPanel.jsx  # Card preview audio player interface
+│   │   │   ├── ScoutColumn.jsx  # Search & History column layout
+│   │   │   ├── ScouterPlaylist.jsx # Leaderboard table for the daily top 11
+│   │   │   └── ShowcaseColumn.jsx  # Interactive 3D FUT card displaying normalized stats
+│   │   ├── lib/
+│   │   │   ├── audioPlayer.js   # HTML5 audio player manager instance
+│   │   │   └── useAudioPlayer.js # React player subscriber hook
+│   │   ├── App.jsx            # Main dashboard container with modal legal views
 │   │   └── index.css          # FUT/EA FC dark-mode CSS design system
 │   └── package.json
 ├── dev.py                     # Single-command concurrent developer runner

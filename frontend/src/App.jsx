@@ -89,12 +89,23 @@ export default function App() {
     <div className="container">
       {/* Header Banner */}
       <header className="app-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'space-between' }}>
           <div>
             <h1>
               VIBEFC
             </h1>
           </div>
+          <button 
+            className="info-header-btn" 
+            onClick={() => setActiveModal('info')}
+            aria-label="About VibeFC"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -184,7 +195,23 @@ export default function App() {
         <div className="legal-modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="legal-modal-content" onClick={e => e.stopPropagation()}>
             <button className="legal-modal-close" onClick={() => setActiveModal(null)}>×</button>
-            {activeModal === 'privacy' ? (
+            {activeModal === 'info' ? (
+              <div className="legal-text-content" style={{ textAlign: 'center' }}>
+                <h2>About VibeFC</h2>
+                <p className="last-updated">Football Soundtrack Vibe Checker</p>
+                <p style={{ marginBottom: '1.25rem' }}>VibeFC evaluates whether a song matches classic football gaming soundtracks using a One-Class Support Vector Machine (OC-SVM) model trained on 1,400+ authentic tracks from actual FIFA / EA FC games.</p>
+                <h3 style={{ fontSize: '0.9rem', color: 'var(--fc-lime)', marginTop: '1.5rem', marginBottom: '0.5rem' }}>Disclaimer & Non-Affiliation</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                  VibeFC is a fan-made, community-driven project created for entertainment and research purposes.
+                  This project is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Electronic Arts Inc. (EA), EA Sports, FIFA, or any of their subsidiaries or affiliates.
+                </p>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.75rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.25rem' }}>
+                  <button className="footer-btn" onClick={() => setActiveModal('privacy')}>Privacy Policy</button>
+                  <span style={{ color: 'var(--text-muted)' }}>|</span>
+                  <button className="footer-btn" onClick={() => setActiveModal('terms')}>Terms of Service</button>
+                </div>
+              </div>
+            ) : activeModal === 'privacy' ? (
               <div className="legal-text-content">
                 <h2>Privacy Policy</h2>
                 <p className="last-updated">Last Updated: July 9, 2026</p>
@@ -195,6 +222,9 @@ export default function App() {
                 <p>When you search or check a track, the track metadata (such as title, artist, cover art, and audio features) and its calculated vibe score are cached anonymously in our database to optimize future lookups.</p>
                 <h3>3. Third-Party Services</h3>
                 <p>We access metadata, cover art, and audio previews from public third-party CDNs (like Spotify). Their own terms and privacy policies apply to content accessed from their systems.</p>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
+                  <button className="footer-btn" onClick={() => setActiveModal('info')}>← Back to About</button>
+                </div>
               </div>
             ) : (
               <div className="legal-text-content">
@@ -209,6 +239,9 @@ export default function App() {
                 <p>FIFA, FUT, and EA FC are trademarks of Electronic Arts Inc. and FIFA. VibeFC is an independent fan-made platform not officially sponsored or endorsed by them.</p>
                 <h3>4. Warranties</h3>
                 <p>This service is provided "as is" without warranty of any kind, including vibe score accuracy or uninterrupted uptime.</p>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
+                  <button className="footer-btn" onClick={() => setActiveModal('info')}>← Back to About</button>
+                </div>
               </div>
             )}
           </div>
