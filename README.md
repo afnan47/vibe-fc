@@ -4,6 +4,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=flat-square&logo=fastapi)
 ![React](https://img.shields.io/badge/React-18%2B-61DAFB?style=flat-square&logo=react)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deploy-black?style=flat-square&logo=vercel)](https://vibe-fc-11.vercel.app)
 
 VibeFC is an end-to-end web application that evaluates whether a song matches classic football gaming soundtracks using machine learning. 
 
