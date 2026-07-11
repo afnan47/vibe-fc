@@ -5,7 +5,7 @@ import ScouterPlaylist from './components/ScouterPlaylist';
 import MiniPlayer from './components/MiniPlayer';
 import { initPlayer } from './lib/audioPlayer';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8000' : '';
 
 export default function App() {
   const [selectedTrack, setSelectedTrack] = useState(null);

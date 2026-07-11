@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8000' : '';
 const SPOTIFY_RE = /(?:open\.spotify\.com\/track\/|spotify:track:)[a-zA-Z0-9]{22}|^[a-zA-Z0-9]{22}$/;
 
 function SearchBar({ onSearch, isLoading, value, onChange }) {

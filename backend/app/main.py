@@ -3,7 +3,7 @@ import re
 import asyncio
 import pandas as pd
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -35,11 +35,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[Startup] Seed scout check error: {e}")
 
-    # Start 24h recurring scheduler using AsyncIOScheduler
-    _scheduler = AsyncIOScheduler()
-    _scheduler.add_job(run_daily_scout_async, "interval", hours=24, id="daily_scout", replace_existing=True)
-    _scheduler.start()
-    print("[Startup] Daily scouter scheduler started (24h interval).")
+    # Start 24h recurring scheduler using AsyncIOScheduler (only if not on Vercel)
+    if not os.getenv("VERCEL"):
+        _scheduler = AsyncIOScheduler()
+        _scheduler.add_job(run_daily_scout_async, "interval", hours=24, id="daily_scout", replace_existing=True)
+        _scheduler.start()
+        print("[Startup] Daily scouter scheduler started (24h interval).")
+    else:
+        print("[Startup] Running on Vercel - Background scheduler disabled (using Vercel Cron instead).")
 
     yield
 
@@ -281,6 +284,30 @@ async def get_history(limit: int = 10):
 async def scouter_playlist():
     """Returns today's top 11 FIFA Elite scouted tracks."""
     return get_scouter_playlist()
+
+
+@app.get("/api/scouter/cron")
+async def scouter_cron(authorization: str = Header(None)):
+    """Triggers the daily scouter job via cron."""
+    # Vercel sends a Bearer token in the Authorization header: Bearer <CRON_SECRET>
+    cron_secret = os.getenv("CRON_SECRET")
+    if cron_secret:
+        expected_auth = f"Bearer {cron_secret}"
+        if authorization != expected_auth:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+    elif os.getenv("VERCEL"):
+        # If running on Vercel and CRON_SECRET is not set, we deny access for security
+        print("[Cron] CRON_SECRET is not configured in Vercel environment variables.")
+        raise HTTPException(status_code=401, detail="Unauthorized - CRON_SECRET not configured")
+
+    print("[Cron] Triggering daily scout execution...")
+    try:
+        scouted = await run_daily_scout_async()
+        return {"status": "success", "scouted_count": len(scouted)}
+    except Exception as e:
+        print(f"[Cron] Daily scout execution failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scout failed: {str(e)}")
+
 
 
 

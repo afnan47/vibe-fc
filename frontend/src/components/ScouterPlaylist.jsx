@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, memo } from 'react';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8000' : '';
 
 const PLATFORM_META = {
   spotify_nmf: { label: 'NMF', color: '#1DB954', icon: 's', title: 'New Music Friday' },

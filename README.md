@@ -172,6 +172,11 @@ docker run -p 8000:8000 --env-file .env vibe-fc
 For hobby and production hosting, the following options are recommended:
 
 *   **Hugging Face Spaces (Docker SDK) — *Highly Recommended***: Completely free hosting with 16GB RAM, 2 vCPUs, and **no automatic cold-start sleep/suspension** for active spaces. To deploy, create a new Space, select **Docker** as the SDK, select the **Blank** template, and add your environment variables under Space Settings -> Variables and secrets.
+*   **Vercel — *Fastest Serverless Deployment***: Deploy the repository as a unified project using Vercel's native integration. It automatically builds the Vite frontend and deploys the FastAPI backend as Serverless Functions using the configuration in `vercel.json`. Configure the following environment variables in the Vercel Dashboard:
+    *   `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (for caching)
+    *   `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` (if running in production mode)
+    *   `RAPIDAPI_KEY` (optional, for live queries)
+    *   `CRON_SECRET` (recommended, to secure the automated daily scouter cron job configured at `/api/scouter/cron`)
 *   **Render (Render.com)**: Easiest dockerized deployment. Set the service source type to **Docker**, bind the port to `$PORT`, and add your environment variables in the dashboard settings. *(Note: Render's Free tier container sleeps after 15 mins of inactivity)*.
 *   **Railway (Railway.app)**: Best for cheap, always-on deployments. Railway automatically builds from the root `Dockerfile` and deploys it.
 *   **Virtual Private Server (VPS)**: Standard docker-compose or container run setup with a reverse proxy (Nginx/Caddy) to manage SSL.
