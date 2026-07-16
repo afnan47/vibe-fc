@@ -392,8 +392,13 @@ async def run_daily_scout_async() -> list[dict]:
         print("[Scouter] Supabase client unavailable, can't persist scouted tracks.")
         return []
 
-    # Run platform crawlers in parallel threads
+    # Configure custom thread pool with higher max_workers to parallelize network requests
+    from concurrent.futures import ThreadPoolExecutor
     loop = asyncio.get_running_loop()
+    executor = ThreadPoolExecutor(max_workers=50)
+    loop.set_default_executor(executor)
+
+    # Run platform crawlers in parallel threads
     spotify_task = loop.run_in_executor(None, crawl_spotify_nmf)
     pitchfork_task = loop.run_in_executor(None, crawl_pitchfork)
     soundcloud_task = loop.run_in_executor(None, crawl_soundcloud)
@@ -507,18 +512,20 @@ async def run_daily_scout_async() -> list[dict]:
     except Exception as e:
         print(f"[Scouter] Error clearing old batch: {e}")
 
+    payloads = []
     for rank, t in enumerate(top11, 1):
-        payload = {
+        payloads.append({
             "track_id": t["track_id"],
             "scout_batch_id": batch_id,
             "scout_rank": rank,
             "vibe_score": t["vibe_score"],
             "source_platform": t["source_platform"],
-        }
+        })
+    if payloads:
         try:
-            await asyncio.to_thread(lambda: supabase.table("scouted_tracks").insert(payload).execute())
+            await asyncio.to_thread(lambda: supabase.table("scouted_tracks").insert(payloads).execute())
         except Exception as e:
-            print(f"[Scouter] Error inserting {t['track_id']}: {e}")
+            print(f"[Scouter] Error bulk inserting: {e}")
 
     print(f"[Scouter] === Daily Scout Complete ({datetime.now().isoformat()}) ===")
     return top11

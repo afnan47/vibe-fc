@@ -117,6 +117,9 @@ def fetch_spotify_metadata_via_api(track_id: str) -> dict | None:
             }
     except Exception as e:
         print(f"Spotify API metadata fetch error: {e}")
+        if "403" in str(e) or "premium" in str(e).lower():
+            disable_spotify_api()
+            print("Spotify API disabled due to 403 (No premium subscription) during metadata fetch.")
     return None
 
 
@@ -234,8 +237,17 @@ def query_sharded_parquet_lake(track_id: str) -> dict:
             con.close()
     return None
 
+_rapidapi_disabled = False
+
+def disable_rapidapi():
+    global _rapidapi_disabled
+    _rapidapi_disabled = True
+
 def fetch_from_rapidapi(track_id: str) -> dict:
     """Fetches track audio features from the RapidAPI Spotify Extended Audio Features API."""
+    global _rapidapi_disabled
+    if _rapidapi_disabled:
+        return None
     api_key = os.getenv("RAPIDAPI_KEY")
     if not api_key:
         print("Warning: RAPIDAPI_KEY not set. RapidAPI fallback skipped.")
@@ -261,6 +273,10 @@ def fetch_from_rapidapi(track_id: str) -> dict:
                 'loudness': float(feat.get('loudness', -6.0)),
                 'source': 'rapidapi_fallback'
             }
+        elif r.status_code == 429:
+            print(f"RapidAPI failed with status code 429: {r.text}")
+            disable_rapidapi()
+            print("RapidAPI disabled for the rest of this run due to 429 rate limit/quota.")
         else:
             print(f"RapidAPI failed with status code {r.status_code}: {r.text}")
     except Exception as e:

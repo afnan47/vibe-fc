@@ -47,7 +47,11 @@ The application aggregates fresh candidate tracks from the web, filters and scor
     *   **SoundCloud Trending Charts**: Calls SoundCloud's public charts API (when `SOUNDCLOUD_CLIENT_ID` is set) and searches Spotify for matching IDs.
 *   **Ranking & Batching**: All unique tracks discovered from crawlers are analyzed and scored. The top 11 tracks are stored with a batch timestamp `scout_batch_id` and ranked 1 to 11.
 *   **Fallback Pool**: If the crawler output falls short of 11 successfully scored tracks, the engine automatically supplements the list with random tracks from the SQLite Golden Database.
-*   **Automatic Scheduler & Vercel Cron**: On localhost, the server uses an APScheduler interval (every 24 hours) to fetch and score new daily songs. In production on Vercel, the server disables the background thread and relies on Vercel Cron calling `/api/scouter/cron` secured with a `CRON_SECRET` header.
+*   **Automation & Daily Schedulers**:
+    *   **GitHub Actions (Recommended)**: Runs the crawler daily at midnight UTC via the `.github/workflows/daily-scouter.yml` workflow. This is the recommended approach for production because it avoids Vercel's strict serverless function timeout limits (10s on Hobby tier) and provides persistent execution logs.
+    *   **Vercel Cron**: A Vercel Cron job configured at `/api/scouter/cron` can call the endpoint secured with a `CRON_SECRET` header. Note: This can trigger 504 timeouts on Vercel's Hobby tier if execution exceeds 10s.
+    *   **Localhost Scheduler**: When running locally, the server initializes an `APScheduler` interval (every 24 hours) to run the crawler in a background thread.
+
 
 ---
 
@@ -207,6 +211,14 @@ For hobby and production hosting, the following options are recommended:
 *   **Render (Render.com)**: Easiest dockerized deployment. Set the service source type to **Docker**, bind the port to `$PORT`, and add your environment variables in the dashboard settings. *(Note: Render's Free tier container sleeps after 15 mins of inactivity)*.
 *   **Railway (Railway.app)**: Best for cheap, always-on deployments. Railway automatically builds from the root `Dockerfile` and deploys it.
 *   **Virtual Private Server (VPS)**: Standard docker-compose or container run setup with a reverse proxy (Nginx/Caddy) to manage SSL.
+*   **GitHub Actions (Scouter Crawler Job)**: Running the daily crawler via GitHub Actions is recommended. To set this up:
+    1. In your GitHub repository, go to **Settings > Secrets and variables > Actions**.
+    2. Add the following **Repository Secrets**:
+       * `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (Required for database caching)
+       * `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` (Optional; falls back to Embed scrape if omitted)
+       * `RAPIDAPI_KEY` (Optional; required for 2025/2026 live track queries)
+       * `SOUNDCLOUD_CLIENT_ID` (Optional; required for SoundCloud charts crawler)
+       * `HF_TOKEN` and `HF_REPO_ID` (Optional; required for remote sharded Parquet queries)
 
 ### 3. Storage Architecture Note (SQLite & Supabase)
 The golden reference dataset SQLite database (`The Ultimate FUT Playlist.db`) is read-only and is packaged directly into the container. Newly scouted/analyzed tracks and session histories are stored in **Supabase Cloud DB**, so container recycling does not affect cached results or user history.
